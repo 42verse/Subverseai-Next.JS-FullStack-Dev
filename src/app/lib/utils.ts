@@ -10,5 +10,7 @@ export const createToken = (userId: string) => {
   const dataStoredInToken: DataStoredInToken = { _id: String(userId) };
   const secretKey:string = process.env.SECRET_KEY as string;
 
+  console.log('generating token >>> ')
+
   return sign(dataStoredInToken, secretKey);
 }
