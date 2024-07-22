@@ -148,7 +148,7 @@ export default function Data() {
                                     <PopoverContent className="flex-col justify-between">
                                         <div className="flex bg-zinc-700 justify-between my-2 px-2 py-1  rounded-xl">
                                             <div className="self-center font-semibold">Agent Empathy</div>
-                                            <div className={getTextColor(customer.Analysis.sentiment_analysis.overall_score)} >{customer.Analysis.sentiment_analysis.overall_score}/10</div>
+                                            <div className={getTextColor(customer.Analysis.sentiment_analysis.overall_score)}>{customer.Analysis.sentiment_analysis.overall_score}/10</div>
                                         </div>
                                         <div className="flex bg-zinc-700 justify-between my-2 px-2 py-1  rounded-xl">
                                             <div className="self-center font-semibold">Responsiveness</div>
@@ -248,6 +248,11 @@ export default function Data() {
                                                                     <span className="font-bold text-xl text-white">Sentiment Analysis</span><span className={getTextColor(apianalysis.sentiment_analysis.overall_score)}>{apianalysis.sentiment_analysis.overall_score}/10</span>
                                                                     </div>
                                                                     <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.sentiment_analysis.detail}</div>
+                                                                    <div className="flex gap-3 md:gap-5 mt-3">
+                                                                        <p><span className="font-medium text-white">Empathy </span><span className={getTextColor(apianalysis.sentiment_analysis.empathy)}>{apianalysis.sentiment_analysis.empathy}/10</span></p>
+                                                                        <p><span className="font-medium text-white">Apology </span><span className={getTextColor(apianalysis.sentiment_analysis.apology)}>{apianalysis.sentiment_analysis.apology}/10</span></p>
+                                                                        <p><span className="font-medium text-white">Listening Rapport </span><span className={getTextColor(apianalysis.sentiment_analysis.listening_rapport)}>{apianalysis.sentiment_analysis.listening_rapport}/10</span></p>
+                                                                    </div>
                                                                 </div>
 
                                                                 <div className="border p-3 rounded-xl bg-zinc-700">
@@ -255,6 +260,11 @@ export default function Data() {
                                                                     <span className="font-bold text-xl text-white">Call Opening</span> <span className={getTextColor(apianalysis.call_opening.overall_score)}>{apianalysis.call_opening.overall_score}/10</span>
                                                                     </div>
                                                                     <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.call_opening.detail}</div>
+                                                                    <div className="flex gap-3 md:gap-5 mt-3">
+                                                                        <p><span className="font-medium text-white">Greetings:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.call_opening.greetings}</span></p>
+                                                                        <p><span className="font-medium text-white">Brand Name:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.call_opening.brand_name}</span></p>
+                                                                        <p><span className="font-medium text-white">Name Exchange: </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.call_opening.name_exchange}</span></p>
+                                                                    </div>
                                                                 </div>
 
                                                                 <div className="border p-3 rounded-xl bg-zinc-700">
@@ -269,6 +279,23 @@ export default function Data() {
                                                                     <span className="font-bold text-xl text-white">Process Information</span> <span className={getTextColor(apianalysis.process_information.score)}>{apianalysis.process_information.score}/10</span>
                                                                     </div>
                                                                     <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.process_information.detail}</div>
+                                                                    <div className="flex gap-3 md:gap-5 mt-3">
+                                                                        <p><span className="font-medium text-white">Objection:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.process_information.objection}</span></p>
+                                                                        <p><span className="font-medium text-white">Escalation:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.process_information.escalation}</span></p>
+                                                                        <p><span className="font-medium text-white">Information Disclosure: </span><span className={getTextColor(apianalysis.process_information.information_disclosure)}>{apianalysis.process_information.information_disclosure}/10</span></p>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="border p-3 rounded-xl bg-zinc-700">
+                                                                    <div className="flex justify-between">
+                                                                    <span className="font-bold text-xl text-white">Zero Tolerance</span>
+                                                                    </div>
+                                                                    <div className="flex gap-3 md:gap-5 mt-3">
+                                                                        <p><span className="font-medium text-white">Rude Unprofessional:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.zero_tolerance.rude_unprofessional}</span></p>
+                                                                        <p><span className="font-medium text-white">Dead Air:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.zero_tolerance.dead_air}</span></p>
+                                                                        <p><span className="font-medium text-white">Misleading: </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.zero_tolerance.misleading}</span></p>
+                                                                        <p><span className="font-medium text-white">Fraudulent: </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.zero_tolerance.fraudulent}</span></p>
+                                                                    </div>
                                                                 </div>
 
                                                                 {/* <div className="border p-3 rounded-xl bg-zinc-700">
@@ -284,10 +311,24 @@ export default function Data() {
                                                                     </div>
                                                                     <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.Call_Flow_Optimization.detail}</div>
                                                                 </div> */}
+                                                                <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
+                                                                    <div className="font-bold text-xl text-white">Privacy </div>
+                                                                    <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.privacy}</div>
+                                                                </div>
 
                                                                 <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
-                                                                    <div className="font-bold text-xl text-white">Call Completion Status </div>
-                                                                    <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl"> {apianalysis.call_closing}</div>
+                                                                    <div className="font-bold text-xl text-white">Estimated Time </div>
+                                                                    <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.estimated_time}</div>
+                                                                </div>
+
+                                                                <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
+                                                                    <div className="font-bold text-xl text-white">Action </div>
+                                                                    <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.action}</div>
+                                                                </div>
+
+                                                                <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
+                                                                    <div className="font-bold text-xl text-white">Call Completion </div>
+                                                                    <div className={getTextColor(apianalysis.call_closing)}> {apianalysis.call_closing}/10</div>
                                                                 </div>
      
                                                                 <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
