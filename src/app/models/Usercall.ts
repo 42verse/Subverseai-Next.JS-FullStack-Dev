@@ -33,6 +33,11 @@ const Usercall = new mongoose.Schema({
     Analysis : {
         type : String,
         required : true
+    },
+    companyId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'UserInformation',
+        required: true
     }
 });
 

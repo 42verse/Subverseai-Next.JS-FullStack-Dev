@@ -14,7 +14,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-
+import Cookies from "js-cookie";
 
 
 
@@ -89,7 +89,7 @@ export default function Data() {
 
     const getuserdatafromapi = async () => {
         setIsLoading(true);
-        const response = await axios.post("/api/getcalldata");
+        const response = await axios.post("/api/getcalldata",{companyId: Cookies.get('companyId')});
         setIsLoading(false);
         setuserdata(response.data);
         // console.log(response.data);
@@ -98,7 +98,7 @@ export default function Data() {
 
     const fetchmyanalysis = async (Call_ID: string) => {
         setIsLoading(true);
-        const response = await axios.post("/api/getcallanalysisdata", { Call_ID: Call_ID });
+        const response = await axios.post("/api/getcallanalysisdata", { Call_ID: Call_ID,companyId: Cookies.get("companyId") });
         setApisummary(response.data.jsonconvertedsummary.summary);
         setApitranscript(response.data.transcriptWithSpeakers);
         setApianalysis(response.data.jsonconvertedanalysis);

@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { EUserRole } from '../interfaces/user.interface';
 
 const UserInformationSchema = new mongoose.Schema({
   name: {
@@ -26,6 +27,11 @@ const UserInformationSchema = new mongoose.Schema({
   },
   credits: {
     type: Number
+  },
+  role: {
+    type: String,
+    enum: EUserRole,
+    default: EUserRole.USER
   }
 });
 

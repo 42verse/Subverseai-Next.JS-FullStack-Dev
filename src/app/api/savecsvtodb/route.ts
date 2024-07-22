@@ -8,6 +8,7 @@ import fs from 'fs';
 import path from 'path';
 const { createClient } = require("@deepgram/sdk");
 import Groq from "groq-sdk";
+import mongoose from 'mongoose';
 
 
 const deepgram = createClient(process.env.DEEPGRAM_API_KEY);
@@ -90,9 +91,12 @@ export async function POST(req: NextRequest, res: NextResponse) {
     const response = await axios.get("https://script.googleusercontent.com/macros/echo?user_content_key=NTwjP_ztQ3jKh3TkH5Davk-SdxMdqfdr7CBzEB-VfXkaABzG1dsGTad0qhdqZ8-Sp0dYjKZh-SAHw5GO6vRwi_M9n7Y74gXOm5_BxDlH2jW0nuo2oDemN9CCS2h10ox_1xSncGQajx_ryfhECjZEnK6CqSIS2RFH3BTLd_Ept4sXdR9_oLa-35ATC6ByTVo3zcmqUnrgU8kY7OuuBcRss_FxaIVCJHafwghPfdcWuOroXoRe8FkOi9z9Jw9Md8uu&lib=MMBgbiU6hO1hq2gQ9dDx3m4cSD5YnuDq6");
     await dbConnect();
 
+    const body = await req.json();
+    const companyId = body.companyId;
+
     for (let i = 1; i < response.data.data.length; i++) {
       const callID = response.data.data[i].Call_ID;
-      const existingRecord = await Usercall.findOne({ Call_ID: callID });       //Time Consumed
+      const existingRecord = await Usercall.findOne({ Call_ID: callID , companyId: new mongoose.Types.ObjectId(companyId)});       //Time Consumed
 
       if (existingRecord) {
         console.log(`Record already exists for Call_ID: ${callID}`);
@@ -149,6 +153,7 @@ export async function POST(req: NextRequest, res: NextResponse) {
             Transcript: JSON.stringify(transcriptWithSpeakers),
             Summary: JSON.stringify(jsonconvertedsummary),
             Analysis: JSON.stringify(jsonconvertedanalysis),
+            companyId: companyId
           });
 
           console.log("Data inserted successfully for row:", i,"in Database");
