@@ -10,7 +10,7 @@ const { createClient } = require("@deepgram/sdk");
 import Groq from "groq-sdk";
 import mongoose from 'mongoose';
 import OpenAI from "openai";
-const llm_client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const llm_client:any = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 
 const deepgram = createClient(process.env.DEEPGRAM_API_KEY);
