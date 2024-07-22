@@ -11,6 +11,7 @@ import Loading from "@/app/components/Loading"
 import { set } from 'mongoose';
 import { useRouter } from 'next/navigation'
 import Cookies from 'js-cookie'
+import { EUserRole } from '../interfaces/user.interface';
 
 interface TranscriptItem {
   transcript: string;
@@ -67,20 +68,14 @@ export default function Component() {
 
 
 
-
-  if(Cookies.get('username')=="admin")
-    {
-      router.push("/Admin");
-    }
-    else
+  if(Cookies.get('role') !== EUserRole.COMPANY)
     {
       router.push("/Login");
     }
 
-
   const runcsvtojsonapi = async () => {
     setIsLoading(true);
-    const response = await axios.post("/api/savecsvtodb");
+    const response = await axios.post("/api/savecsvtodb",{companyId: Cookies.get("companyId")});
     toast(response.data.message);
     setIsLoading(false);
   };
@@ -105,6 +100,9 @@ export default function Component() {
     Cookies.remove('username');
     Cookies.remove('email');
     Cookies.remove('phone');
+    Cookies.remove('companyId');
+    Cookies.remove('role');
+    Cookies.remove('authToken');
     router.push('/Login');
   };
 

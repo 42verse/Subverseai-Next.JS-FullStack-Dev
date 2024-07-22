@@ -11,6 +11,7 @@ import { useState } from "react";
 import axios from "axios";
 import { useRouter } from 'next/navigation';
 import Loading from "@/app/components/Loading";
+import { EUserRole } from "../interfaces/user.interface"
 
 export default function Login() {
 
@@ -25,7 +26,7 @@ export default function Login() {
     {
       console.log("User needs to Login");
     }
-    else if(Cookies.get('email')=="info@subverseai.com")
+    else if(Cookies.get('role')==EUserRole.COMPANY)
       {
         router.push('/Admin', { scroll: false });
       }
@@ -51,11 +52,14 @@ export default function Login() {
       Cookies.set('email', response.data.userdata.email, { expires: 1, path: '/' });
       Cookies.set('phone', response.data.userdata.phone, { expires: 1, path: '/' });
 
-
-        if (response.data.userdata.email == "info@subverseai.com") {
+        if (response.data.userdata.role === EUserRole.COMPANY) {
           router.push('/Admin', { scroll: false });
+          Cookies.set('companyId', response.data.userdata._id, { expires: 1, path: '/' });
         }
         else{ router.push('/Dashboard', { scroll: false }); }
+
+      Cookies.set('role', response.data.userdata.role, { expires: 1, path: '/' });
+      Cookies.set('authToken', response.data.authToken, { expires: 1, path: '/' });
       
       //Save cookies here Bitch
       }
