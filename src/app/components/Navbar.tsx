@@ -4,6 +4,7 @@ import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import Cookies from 'js-cookie';
+import { EUserRole } from "../interfaces/user.interface";
 
 export default function Component() {
   const [email, setEmail] = useState("");
@@ -17,7 +18,7 @@ export default function Component() {
       setloginstat("/Login");
       setlogintxt("Login");
     }
-    else if(email === "info@subverseai.com")
+    else if(Cookies.get('role') === EUserRole.COMPANY)
       {
         setlogintxt("Dashboard");
         setloginstat("/Admin");
