@@ -8,12 +8,17 @@ export async function POST(req: NextRequest, res: NextResponse) {
         await dbConnect();
         const body = await req.json();
         const companyId = body.companyId;
+        const agentId = body.agentId || "";
+        const findUserCallCondition:any = {companyId: new mongoose.Types.ObjectId(companyId)};
+        if(agentId){
+            findUserCallCondition.agentId = new mongoose.Types.ObjectId(agentId)
+        }
 
-        const data = await Usercall.find({companyId: new mongoose.Types.ObjectId(companyId)}).select('Call_ID Customer_ID Agent_Name Call Call_Recording_URL Usecase Analysis');
+        const data = await Usercall.find(findUserCallCondition).select('Call_ID Customer_ID Agent_Name Call Call_Recording_URL Usecase Analysis');
 
         // Convert Analysis field from string to JSON
         const modifiedData = data.map(item => {
-            const analysisJson = JSON.parse(item.Analysis);
+            const analysisJson = item.Analysis ? JSON.parse(item.Analysis): {};
             return {
                 ...item.toObject(), // Convert Mongoose document to plain JavaScript object
                 Analysis: analysisJson

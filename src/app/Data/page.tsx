@@ -89,7 +89,7 @@ export default function Data() {
 
     const getuserdatafromapi = async () => {
         setIsLoading(true);
-        const response = await axios.post("/api/getcalldata",{companyId: Cookies.get('companyId')});
+        const response = await axios.post("/api/getcalldata",{companyId: Cookies.get('companyId'),agentId: Cookies.get('agentId')});
         setIsLoading(false);
         setuserdata(response.data);
         // console.log(response.data);
@@ -98,8 +98,9 @@ export default function Data() {
 
     const fetchmyanalysis = async (Call_ID: string) => {
         setIsLoading(true);
-        const response = await axios.post("/api/getcallanalysisdata", { Call_ID: Call_ID,companyId: Cookies.get("companyId") });
-        setApisummary(response.data.jsonconvertedsummary.summary);
+        const response = await axios.post("/api/getcallanalysisdata", { Call_ID: Call_ID,companyId: Cookies.get("companyId"),agentId: Cookies.get('agentId') });
+        const summary = response.data.jsonconvertedsummary?.summary ? response.data.jsonconvertedsummary?.summary.split('\n') : [];
+        setApisummary(summary);
         setApitranscript(response.data.transcriptWithSpeakers);
         setApianalysis(response.data.jsonconvertedanalysis);
         setIsLoading(false);
@@ -148,24 +149,24 @@ export default function Data() {
                                     <PopoverContent className="flex-col justify-between">
                                         <div className="flex bg-zinc-700 justify-between my-2 px-2 py-1  rounded-xl">
                                             <div className="self-center font-semibold">Agent Empathy</div>
-                                            <div className={getTextColor(customer.Analysis.sentiment_analysis.overall_score)}>{customer.Analysis.sentiment_analysis.overall_score}/10</div>
+                                            <div className={getTextColor(customer.Analysis?.sentiment_analysis?.overall_score || 0)}>{customer.Analysis?.sentiment_analysis?.overall_score || '-'}/10</div>
                                         </div>
                                         <div className="flex bg-zinc-700 justify-between my-2 px-2 py-1  rounded-xl">
                                             <div className="self-center font-semibold">Responsiveness</div>
-                                            <div className={getTextColor(customer.Analysis.call_opening.overall_score)}>{customer.Analysis.call_opening.overall_score}/10</div>
+                                            <div className={getTextColor(customer.Analysis?.call_opening?.overall_score || 0)}>{customer.Analysis?.call_opening?.overall_score || '-'}/10</div>
                                         </div>
                                         <div className="flex bg-zinc-700 justify-between my-2 px-2 py-1  rounded-xl">
                                             <div className="self-center font-semibold">Agent Knowledge</div>
-                                            <div className={getTextColor(customer.Analysis.context_setting.score)}>{customer.Analysis.context_setting.score}/10</div>
+                                            <div className={getTextColor(customer.Analysis?.context_setting?.score || 0)}>{customer.Analysis?.context_setting?.score || '-'}/10</div>
                                         </div>
                                     </PopoverContent>
                                 </Popover>
                             </TableCell>
-                            <TableCell className="text-center">{customer.Customer_ID}</TableCell>
-                            <TableCell className="text-center">{customer.Usecase}</TableCell>
-                            <TableCell className="text-center">{customer.Analysis.issue_resolution_status}</TableCell>
-                            <TableCell className="text-center">{customer.Analysis.sentiment_analysis.overall_score}</TableCell>
-                            <TableCell className="text-center">{customer.Analysis.process_information.score}</TableCell>
+                            <TableCell className="text-center">{customer?.Customer_ID}</TableCell>
+                            <TableCell className="text-center">{customer?.Usecase || '-'}</TableCell>
+                            <TableCell className="text-center">{customer.Analysis?.issue_resolution_status || '-'}</TableCell>
+                            <TableCell className="text-center">{customer.Analysis?.sentiment_analysis?.overall_score || '-'}</TableCell>
+                            <TableCell className="text-center">{customer.Analysis?.process_information?.score || '-'}</TableCell>
 
 
 
@@ -245,44 +246,44 @@ export default function Data() {
                                                             <div className="flex flex-col gap-6 bg-[#27272A] text-black w-[97%] p-4 rounded-2xl ">
                                                                 <div className="border p-3 rounded-xl bg-zinc-700">
                                                                     <div className="flex justify-between">
-                                                                    <span className="font-bold text-xl text-white">Sentiment Analysis</span><span className={getTextColor(apianalysis.sentiment_analysis.overall_score)}>{apianalysis.sentiment_analysis.overall_score}/10</span>
+                                                                    <span className="font-bold text-xl text-white">Sentiment Analysis</span><span className={getTextColor(apianalysis?.sentiment_analysis?.overall_score || 0)}>{apianalysis?.sentiment_analysis?.overall_score || '-'}/10</span>
                                                                     </div>
-                                                                    <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.sentiment_analysis.detail}</div>
+                                                                    {apianalysis?.sentiment_analysis?.detail ? <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.sentiment_analysis.detail}</div> : null}
                                                                     <div className="flex gap-3 md:gap-5 mt-3">
-                                                                        <p><span className="font-medium text-white">Empathy </span><span className={getTextColor(apianalysis.sentiment_analysis.empathy)}>{apianalysis.sentiment_analysis.empathy}/10</span></p>
-                                                                        <p><span className="font-medium text-white">Apology </span><span className={getTextColor(apianalysis.sentiment_analysis.apology)}>{apianalysis.sentiment_analysis.apology}/10</span></p>
-                                                                        <p><span className="font-medium text-white">Listening Rapport </span><span className={getTextColor(apianalysis.sentiment_analysis.listening_rapport)}>{apianalysis.sentiment_analysis.listening_rapport}/10</span></p>
+                                                                        <p><span className="font-medium text-white">Empathy </span><span className={getTextColor(apianalysis?.sentiment_analysis?.empathy || 0)}>{apianalysis?.sentiment_analysis?.empathy || '-'}/10</span></p>
+                                                                        <p><span className="font-medium text-white">Apology </span><span className={getTextColor(apianalysis?.sentiment_analysis?.apology || 0)}>{apianalysis?.sentiment_analysis?.apology || '-'}/10</span></p>
+                                                                        <p><span className="font-medium text-white">Listening Rapport </span><span className={getTextColor(apianalysis?.sentiment_analysis?.listening_rapport || 0)}>{apianalysis?.sentiment_analysis?.listening_rapport || '-'}/10</span></p>
                                                                     </div>
                                                                 </div>
 
                                                                 <div className="border p-3 rounded-xl bg-zinc-700">
                                                                     <div className="flex justify-between">
-                                                                    <span className="font-bold text-xl text-white">Call Opening</span> <span className={getTextColor(apianalysis.call_opening.overall_score)}>{apianalysis.call_opening.overall_score}/10</span>
+                                                                    <span className="font-bold text-xl text-white">Call Opening</span> <span className={getTextColor(apianalysis?.call_opening?.overall_score || 0)}>{apianalysis?.call_opening?.overall_score || '-'}/10</span>
                                                                     </div>
-                                                                    <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.call_opening.detail}</div>
+                                                                    {apianalysis?.call_opening?.detail ? <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.call_opening.detail}</div> : null}
                                                                     <div className="flex gap-3 md:gap-5 mt-3">
-                                                                        <p><span className="font-medium text-white">Greetings:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.call_opening.greetings}</span></p>
-                                                                        <p><span className="font-medium text-white">Brand Name:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.call_opening.brand_name}</span></p>
-                                                                        <p><span className="font-medium text-white">Name Exchange: </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.call_opening.name_exchange}</span></p>
+                                                                        <p><span className="font-medium text-white">Greetings:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.call_opening?.greetings || '-'}</span></p>
+                                                                        <p><span className="font-medium text-white">Brand Name:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.call_opening?.brand_name || '-'}</span></p>
+                                                                        <p><span className="font-medium text-white">Name Exchange: </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.call_opening?.name_exchange || '-'}</span></p>
                                                                     </div>
                                                                 </div>
 
                                                                 <div className="border p-3 rounded-xl bg-zinc-700">
-                                                                    <div className="flex justify-between">
-                                                                    <span className="font-bold text-xl text-white">Context Setting</span> <span className={getTextColor(apianalysis.context_setting.score)}>{apianalysis.context_setting.score}/10</span>
+                                                                    <div className="flex justify-between items-center">
+                                                                    <span className="font-bold text-xl text-white">Context Setting</span> <span className={getTextColor(apianalysis?.context_setting?.score || '0')}>{apianalysis?.context_setting?.score || '-'}/10</span>
                                                                     </div>
-                                                                    <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.context_setting.detail}</div>
+                                                                    {apianalysis?.context_setting?.detail ? <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.context_setting.detail}</div> :null}
                                                                 </div>
 
                                                                 <div className="border p-3 rounded-xl bg-zinc-700">
                                                                     <div className="flex justify-between">
-                                                                    <span className="font-bold text-xl text-white">Process Information</span> <span className={getTextColor(apianalysis.process_information.score)}>{apianalysis.process_information.score}/10</span>
+                                                                    <span className="font-bold text-xl text-white">Process Information</span> <span className={getTextColor(apianalysis?.process_information?.score || 0)}>{apianalysis?.process_information?.score || '-'}/10</span>
                                                                     </div>
-                                                                    <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.process_information.detail}</div>
+                                                                    {apianalysis?.process_information?.detail ? <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.process_information.detail}</div> : null}
                                                                     <div className="flex gap-3 md:gap-5 mt-3">
-                                                                        <p><span className="font-medium text-white">Objection:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.process_information.objection}</span></p>
-                                                                        <p><span className="font-medium text-white">Escalation:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.process_information.escalation}</span></p>
-                                                                        <p><span className="font-medium text-white">Information Disclosure: </span><span className={getTextColor(apianalysis.process_information.information_disclosure)}>{apianalysis.process_information.information_disclosure}/10</span></p>
+                                                                        <p><span className="font-medium text-white">Objection:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.process_information?.objection || '-'}</span></p>
+                                                                        <p><span className="font-medium text-white">Escalation:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.process_information?.escalation || '-'}</span></p>
+                                                                        <p><span className="font-medium text-white">Information Disclosure: </span><span className={getTextColor(apianalysis?.process_information?.information_disclosure || 0)}>{apianalysis?.process_information?.information_disclosure || '-'}/10</span></p>
                                                                     </div>
                                                                 </div>
 
@@ -291,10 +292,10 @@ export default function Data() {
                                                                     <span className="font-bold text-xl text-white">Zero Tolerance</span>
                                                                     </div>
                                                                     <div className="flex gap-3 md:gap-5 mt-3">
-                                                                        <p><span className="font-medium text-white">Rude Unprofessional:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.zero_tolerance.rude_unprofessional}</span></p>
-                                                                        <p><span className="font-medium text-white">Dead Air:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.zero_tolerance.dead_air}</span></p>
-                                                                        <p><span className="font-medium text-white">Misleading: </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.zero_tolerance.misleading}</span></p>
-                                                                        <p><span className="font-medium text-white">Fraudulent: </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.zero_tolerance.fraudulent}</span></p>
+                                                                        <p><span className="font-medium text-white">Rude Unprofessional:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.zero_tolerance?.rude_unprofessional || '-'}</span></p>
+                                                                        <p><span className="font-medium text-white">Dead Air:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.zero_tolerance?.dead_air || '-'}</span></p>
+                                                                        <p><span className="font-medium text-white">Misleading: </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.zero_tolerance?.misleading || '-'}</span></p>
+                                                                        <p><span className="font-medium text-white">Fraudulent: </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.zero_tolerance?.fraudulent || '-'}</span></p>
                                                                     </div>
                                                                 </div>
 
@@ -313,27 +314,27 @@ export default function Data() {
                                                                 </div> */}
                                                                 <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
                                                                     <div className="font-bold text-xl text-white">Privacy </div>
-                                                                    <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.privacy}</div>
+                                                                    <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.privacy || '-'}</div>
                                                                 </div>
 
                                                                 <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
                                                                     <div className="font-bold text-xl text-white">Estimated Time </div>
-                                                                    <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.estimated_time}</div>
+                                                                    <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.estimated_time || '-'}</div>
                                                                 </div>
 
                                                                 <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
                                                                     <div className="font-bold text-xl text-white">Action </div>
-                                                                    <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.action}</div>
+                                                                    <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.action || '-'}</div>
                                                                 </div>
 
                                                                 <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
                                                                     <div className="font-bold text-xl text-white">Call Completion </div>
-                                                                    <div className={getTextColor(apianalysis.call_closing)}> {apianalysis.call_closing}/10</div>
+                                                                    <div className={getTextColor(apianalysis?.call_closing || 0)}> {apianalysis?.call_closing || '-'}/10</div>
                                                                 </div>
      
                                                                 <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
                                                                     <div className="font-bold text-xl text-white">Issue Resolved Status </div>
-                                                                    <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis.issue_resolution_status}</div>
+                                                                    <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.issue_resolution_status || '-'}</div>
                                                                 </div>
                                                             </div>
                                                         )}
@@ -342,11 +343,13 @@ export default function Data() {
 <br /><br /><br />
                                                     <div className="flex flex-col gap-6 bg-[#27272A] text-white w-[97%] p-4 rounded-2xl ">
                                                         <h3 className="text-2xl font-bold text-white">Summary</h3>
-                                                        {/* {apisummary.map((item, index) => ( */}
-                                                            <div className="border rounded-2xl p-2 bg-zinc-700  font-semibold" /* key={index} */>
-                                                                {apisummary}
+                                                        {Array.isArray(apisummary)? apisummary.map((item, index) => (
+                                                            <div className="border rounded-2xl p-2 bg-zinc-700  font-semibold" key={`summary-${index}`}>
+                                                                {item}
                                                             </div>
-                                                        {/* ))} */}
+                                                        )): <div className="border rounded-2xl p-2 bg-zinc-700  font-semibold">
+                                                        {apisummary}
+                                                    </div>}
                                                     </div>
                                                 </div>
                                             </div>

@@ -1,4 +1,5 @@
 export enum EUserRole {
   COMPANY = 'company',
-  USER = 'user'
+  USER = 'user',
+  AGENT = 'agent'
 }

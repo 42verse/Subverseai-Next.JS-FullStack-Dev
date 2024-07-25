@@ -6,7 +6,15 @@ const CallAnalysisParams = new mongoose.Schema({
     ref: 'UserInformation',
     required: true
   },
+  initialQuery: {
+    type: String,
+    required: true
+  },
   analysisQuery: {
+    type: String,
+    required: true
+  },
+  summaryQuery: {
     type: String,
     required: true
   },
@@ -14,8 +22,12 @@ const CallAnalysisParams = new mongoose.Schema({
     type: String,
     required: true
   },
-  parameters: {
-    type: Array,
+  tableColumns: {
+    type: Array<{key: string,label: string}>,
+    required: true
+  },
+  inputFileUrl: {
+    type: String,
     required: true
   }
 });

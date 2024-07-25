@@ -10,7 +10,19 @@ const Usercall = new mongoose.Schema({
         type: String,
         required: true,
     },
+    Customer_Number: {
+        type: String,
+        required: true,
+    },
     Agent_Name: {
+        type: String,
+        required: true,
+    },
+    Call_Status: {
+        type: String,
+        required: true,
+    },
+    Call_Time: {
         type: String,
         required: true,
     },
@@ -35,6 +47,11 @@ const Usercall = new mongoose.Schema({
         required : true
     },
     companyId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'UserInformation',
+        required: true
+    },
+    agentId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'UserInformation',
         required: true
