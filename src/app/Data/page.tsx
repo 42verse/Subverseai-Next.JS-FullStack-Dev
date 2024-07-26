@@ -169,7 +169,7 @@ export default function Data() {
                                         </div>
                                     </PopoverContent>
                                 </Popover> */}
-                                {customer?.policyId}
+                                 <Link href={customer?.policyLink || ""} target="_blank" className="text-blue-600 underline">{customer?.policyId}</Link>
                             </TableCell>
                             <TableCell className="text-center">{customer?.customerNumber}</TableCell>
                             {Cookies.get('role') === EUserRole.COMPANY?<TableCell className="text-center">-</TableCell>: null}
