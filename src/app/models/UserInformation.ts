@@ -32,7 +32,17 @@ const UserInformationSchema = new mongoose.Schema({
     type: String,
     enum: EUserRole,
     default: EUserRole.USER
-  }
+  },
+  companyId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'UserInformation',
+  },
+  policyLink: { //For Company
+    type: String
+  },
+  agentNumber: { //For agent click to call action
+    type: String
+  },
 });
 
 export default mongoose.models.UserInformation || mongoose.model('UserInformation', UserInformationSchema);

@@ -26,13 +26,13 @@ export default function Login() {
     {
       console.log("User needs to Login");
     }
-    else if(Cookies.get('role')==EUserRole.COMPANY)
+    else if(Cookies.get('role')==EUserRole.USER)
       {
-        router.push('/Admin', { scroll: false });
+        router.push('/Dashboard', { scroll: false });
       }
     else
     {
-      router.push('/Dashboard', { scroll: false });
+      router.push('/Admin', { scroll: false });
     }
 
   const submit =async()=>
@@ -55,6 +55,12 @@ export default function Login() {
         if (response.data.userdata.role === EUserRole.COMPANY) {
           router.push('/Admin', { scroll: false });
           Cookies.set('companyId', response.data.userdata._id, { expires: 1, path: '/' });
+        }
+        if (response.data.userdata.role === EUserRole.AGENT) {
+          router.push('/Admin', { scroll: false });
+          Cookies.set('agentId', response.data.userdata._id, { expires: 1, path: '/' });
+          Cookies.set('companyId', response.data.userdata.companyId, { expires: 1, path: '/' });
+          Cookies.set('agentNumber', response.data.userdata.agentNumber, { expires: 1, path: '/' });
         }
         else{ router.push('/Dashboard', { scroll: false }); }
 

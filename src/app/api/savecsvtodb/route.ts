@@ -7,14 +7,15 @@ import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
 const { createClient } = require("@deepgram/sdk");
-import Groq from "groq-sdk";
+//import Groq from "groq-sdk";
 import mongoose from 'mongoose';
 import OpenAI from "openai";
+import CallAnalysisParams from '@/app/models/CallAnalysisParams';
 const llm_client:any = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 
 const deepgram = createClient(process.env.DEEPGRAM_API_KEY);
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+//const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const systemPromptFolder = path.join(process.cwd(), 'src/system_prompts');
 
@@ -72,7 +73,7 @@ const llmResponse = async (query: string, conversationHistory: ChatCompletionMes
   }
 };
 
-const getCallAnalysis = async (systemPromptFile: string, transcriptWithSpeakers: any) => {
+const getCallAnalysis = async (systemPromptFile: string, transcriptWithSpeakers: any,initialQuery: any,analysisQuery: any,summaryQuery: any) => {
   const systemPrompt = getSystemPrompt(systemPromptFile);
   const conversationHistory: ChatCompletionMessageParam[] = [...systemPrompt];
 
@@ -81,68 +82,22 @@ const getCallAnalysis = async (systemPromptFile: string, transcriptWithSpeakers:
     conversationHistory.push({ role, content: utterance.transcript });
   });
 
-  const initialQuery = "Below is the transcript of the call between agent and customer \n {transcript_with_speakers}. \n There could be ASR and speaker recognition errors, especially for numbers and proper nouns. I will be asking more questions in further queries, only reply 'okay, got it' in json format to this query."
-  const initialOutput = await llmResponse(initialQuery, conversationHistory)
+  const initialQueryString = initialQuery ? initialQuery : "Below is the transcript of the call between agent and customer \n {transcript_with_speakers}. \n There could be ASR and speaker recognition errors, especially for numbers and proper nouns. I will be asking more questions in further queries, only reply 'okay, got it' in json format to this query."
+  const initialOutput = await llmResponse(initialQueryString, conversationHistory)
   conversationHistory.push({ role: "assistant", content: initialOutput });
 
-  //OLD CODE
-  /* const summaryQuery = "There could be ASR and speaker recognition errors. Assume the call is getting transferred to the supervisor. Please write a conversation summary with bullet points wherever applicable, for the supervisor to get an overall understanding of conversation so far.";
-  const callSummary = await llmResponse(summaryQuery, conversationHistory);
-
-  const analysisQuery = "There could be ASR and speaker recognition errors. I'm looking to analyze conversations for call center analytics. Perform Customer Sentiment Analysis, Customer Intent Analysis, Agent Empathy, Agent Promptness and Responsiveness, Agent Knowledge, Call Flow Optimization, Call Completion Status value as Completed or Not Completed only, Issue Resolved Status value as Resolved or Not Resolved only. Output should be in JSON format without headings. For ratings, use numbers like 8 instead of formats like 8/10. The JSON structure should follow this format: { Customer_Sentiment: {score, detail}, Customer_Intent: {score, detail}, Agent_Empathy: {score, detail}, Agent_Promptness_and_Responsiveness: {score, detail}, Agent_Knowledge: {score, detail}, Call_Flow_Optimization: {score, detail}, Call_Completion_Status , Issue_Resolved_Status }. Ensure each metric includes a score and a detail. Remove the heading and just provide the JSON ";
-  const callAnalysis = await llmResponse(analysisQuery, conversationHistory); */
-
-  const analysisQuery = "Perform call analysis by referring to metrics explained in system prompt. The output should be in JSON format, following this structure: {\
-  \"problem_code\": \"\",\
-  \"issue_resolution_status\": \"\",\
-  \"action\": \"\",\
-  \"estimated_time\": \"1 day\",\
-  \"sentiment_analysis\": {\
-      \"overall_score\": 0,\
-      \"detail\": \"\",\
-      \"empathy\": 0,\
-      \"apology\": 0,\
-      \"listening_rapport\": 0\
-  },\
-  \"call_opening\": {\
-      \"overall_score\": 0,\
-      \"detail\": \"\",\
-      \"greetings\": \"\",\
-      \"brand_name\": \"\",\
-      \"name_exchange\": \"\"\
-  },\
-  \"context_setting\": {\
-      \"score\": 0,\
-      \"detail\": \"\"\
-  },\
-  \"privacy\": \"\",\
-  \"dead_air\": 0,\
-  \"process_information\": {\
-      \"score\": 0,\
-      \"detail\": \"\",\
-      \"objection\": \"\",\
-      \"escalation\": \"\",\
-      \"information_disclosure\": 0\
-  },\
-  \"call_closing\": 0,\
-  \"zero_tolerance\": {\
-      \"rude_unprofessional\": \"\",\
-      \"dead_air\": \"\",\
-      \"misleading\": \"\",\
-      \"fraudulent\": \"\"\
-  }\
-  }\
-  Please provide only the JSON output, without any additional text or headers."
-  const callAnalysis = await llmResponse(analysisQuery, conversationHistory);
+  const analysisQueryString = analysisQuery ? analysisQuery : "There could be ASR and speaker recognition errors. Assume the call is getting transferred to the supervisor. Please write a conversation summary with bullet points wherever applicable, for the supervisor to get an overall understanding of conversation so far.";
+  const callAnalysis = await llmResponse(analysisQueryString, conversationHistory);
   conversationHistory.push({ role: "assistant", content: callAnalysis });
   
-  const summaryQuery = "Give customer profile and write a conversation summary with bullet points, in less than 50 words. Output should be in json foramt: {summary: \"\"}"
-  const callSummary = await llmResponse(summaryQuery, conversationHistory);
+  const summaryQueryString = summaryQuery ? summaryQuery : "There could be ASR and speaker recognition errors. I'm looking to analyze conversations for call center analytics. Perform Customer Sentiment Analysis, Customer Intent Analysis, Agent Empathy, Agent Promptness and Responsiveness, Agent Knowledge, Call Flow Optimization, Call Completion Status value as Completed or Not Completed only, Issue Resolved Status value as Resolved or Not Resolved only. Output should be in JSON format without headings. For ratings, use numbers like 8 instead of formats like 8/10. The JSON structure should follow this format: { Customer_Sentiment: {score, detail}, Customer_Intent: {score, detail}, Agent_Empathy: {score, detail}, Agent_Promptness_and_Responsiveness: {score, detail}, Agent_Knowledge: {score, detail}, Call_Flow_Optimization: {score, detail}, Call_Completion_Status , Issue_Resolved_Status }. Ensure each metric includes a score and a detail. Remove the heading and just provide the JSON."
+  const callSummary = await llmResponse(summaryQueryString, conversationHistory);
 
   return [callSummary, callAnalysis];
 };
 
-function convertsummarytojson(summary: string): { summary: string[] } {
+//OLD CODE
+/* function convertsummarytojson(summary: string): { summary: string[] } {
   const points = summary.trim().split("\n* ");
   points.shift();
 
@@ -153,15 +108,19 @@ function convertsummarytojson(summary: string): { summary: string[] } {
   });
 
   return conversation;
-}
+} */
 
 export async function POST(req: NextRequest, res: NextResponse) {
   try {
-    const response = await axios.get("https://script.googleusercontent.com/macros/echo?user_content_key=VVwQS3Mc1ChjKEVPX8GOXliBCjB0RIVorj5PDLJ1blucuR1B1as6FWwnbPLoyIXkEfmuoYWQj_mHSZ6h4Y_WPsAX8o_ZbL8rm5_BxDlH2jW0nuo2oDemN9CCS2h10ox_1xSncGQajx_ryfhECjZEnFX5JBsQ8YM32klPfmWp55E08CQUnTMwKcuPxggUm5C3Op_pE8hjaKWkOEV_Er5mRozy-Hu42ASpw11Z7KWABBk7uK8d3rpbSw&lib=M6P1E-s_hX4OUe_H0twS18f0P_ayHuz1V");
     await dbConnect();
-
     const body = await req.json();
     const companyId = body.companyId;
+
+    //GET Company's dynamic call analysis params from CallAnalysisParams collection
+    const findCallAnalysisParams = await CallAnalysisParams.findOne({companyId: new mongoose.Types.ObjectId(companyId)});
+    const inputFileUrl = findCallAnalysisParams?.inputFileUrl || "https://script.googleusercontent.com/macros/echo?user_content_key=VVwQS3Mc1ChjKEVPX8GOXliBCjB0RIVorj5PDLJ1blucuR1B1as6FWwnbPLoyIXkEfmuoYWQj_mHSZ6h4Y_WPsAX8o_ZbL8rm5_BxDlH2jW0nuo2oDemN9CCS2h10ox_1xSncGQajx_ryfhECjZEnFX5JBsQ8YM32klPfmWp55E08CQUnTMwKcuPxggUm5C3Op_pE8hjaKWkOEV_Er5mRozy-Hu42ASpw11Z7KWABBk7uK8d3rpbSw&lib=M6P1E-s_hX4OUe_H0twS18f0P_ayHuz1V";
+
+    const response = await axios.get(inputFileUrl);
 
     for (let i = 1; i < response.data.data.length; i++) {
       const callID = response.data.data[i].Call_ID;
@@ -172,11 +131,11 @@ export async function POST(req: NextRequest, res: NextResponse) {
         continue; // Skip this entry if it already exists
       }
 
-      let usecase = response.data.data[i].Usecase;
+      let usecase = response.data.data[i]?.Usecase;
       let audioUrl = response.data.data[i].Call_Recording_URL;
-      //TODO get system prompt file name from new collection
-      //let systemPromptFile = `${usecase}.txt`;
-      let systemPromptFile = `system_prompt_hitachi.txt`;
+      let systemPromptFile = findCallAnalysisParams?.systemPromptFileName 
+                                ? findCallAnalysisParams?.systemPromptFileName 
+                                : usecase ? `${usecase}.txt` : '';
 
       try {
         const { result, error } = await deepgram.listen.prerecorded.transcribeUrl(   //Time Consumed
@@ -206,8 +165,8 @@ export async function POST(req: NextRequest, res: NextResponse) {
         }));
 
         console.log("Transcription done for row:", i);
-
-        const [callSummary, callAnalysis] = await getCallAnalysis(systemPromptFile, transcriptWithSpeakers);  //Time Consumed
+        const {initialQuery=null,analysisQuery=null,summaryQuery=null} = findCallAnalysisParams
+        const [callSummary, callAnalysis] = await getCallAnalysis(systemPromptFile, transcriptWithSpeakers,initialQuery,analysisQuery,summaryQuery);  //Time Consumed
         //const jsonconvertedsummary = convertsummarytojson(callSummary); //OLD CODE
         const jsonconvertedsummary = JSON.parse(callSummary);
         const jsonconvertedanalysis = JSON.parse(callAnalysis);

@@ -61,14 +61,14 @@ export default function Component() {
   const [audioUrl, setAudioUrl] = useState("");
   const [usecase, setUsecase] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
+  const [customerUrl, setCustomerUrl] = useState("")
   const [apianalysis, setApianalysis] = useState<AnalysisItem>();
   const [apisummary, setApisummary] = useState<string[]>([]);
   const [apitranscript, setApitranscript] = useState<TranscriptItem[]>([]);
 
 
 
-  if(Cookies.get('role') !== EUserRole.COMPANY)
+  if(Cookies.get('role') === EUserRole.USER)
     {
       router.push("/Login");
     }
@@ -94,6 +94,17 @@ export default function Component() {
     }
   };
 
+  const saveCustomerInformation = async () => {
+    setIsLoading(true);
+    const response = await axios.post("/api/saveCustomerInfo",{
+      companyId: Cookies.get("companyId"),
+      inputFileUrl: customerUrl,
+      agentId: Cookies.get("agentId"),
+    });
+    toast(response.data.message);
+    setIsLoading(false);
+  };
+
 
   const deleteCookies = () => {
     Cookies.remove('name');
@@ -101,6 +112,7 @@ export default function Component() {
     Cookies.remove('email');
     Cookies.remove('phone');
     Cookies.remove('companyId');
+    Cookies.remove('agentId');
     Cookies.remove('role');
     Cookies.remove('authToken');
     router.push('/Login');
@@ -195,7 +207,7 @@ export default function Component() {
                   </svg>
                   Call Analysis
                 </Button>
-                <Button
+                {/* <Button
                   variant={"ghost"}
                   onClick={() => setActiveTab("upload")}
                   className="flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
@@ -217,6 +229,29 @@ export default function Component() {
                     <line x1="12" x2="12" y1="3" y2="15" />
                   </svg>
                   Upload
+                </Button> */}
+                <Button
+                  variant={"ghost"}
+                  onClick={() => setActiveTab("uploadCustomer")}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" x2="12" y1="3" y2="15" />
+                  </svg>
+                  Upload Customer
                 </Button>
               </nav>
             </div>
@@ -275,7 +310,7 @@ export default function Component() {
               </div>
             )}
 
-            {activeTab === "upload" && (
+            {/* {activeTab === "upload" && (
               <div className="grid gap-6">
 
                 <Card className="flex flex-col">
@@ -383,6 +418,34 @@ export default function Component() {
                           <br />
                         </div>
                       ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )} */}
+
+            {activeTab === "uploadCustomer" && (
+              <div className="grid gap-6">
+
+                <Card className="flex flex-col">
+                  <CardHeader className="flex-row justify-between">
+                    
+                    <div>
+                    <CardTitle>Upload Customer Data</CardTitle>
+                    <CardDescription>Upload a URL to save customer details.</CardDescription>
+                    </div>
+                    <div className="flex gap-2 flex-col md:flex-row justify-around">
+                        <Button onClick={saveCustomerInformation}>Save</Button>
+                    </div>       
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-center w-full h-32 border-2 border-dashed rounded-md border-muted-foreground/20 hover:border-primary transition-colors">
+                      <input
+                        className="w-full h-full text-4xl p-5"
+                        type="text"
+                        placeholder="URL of Customer Record"
+                        onChange={(e) => setCustomerUrl(e.target.value)}
+                      />
                     </div>
                   </CardContent>
                 </Card>

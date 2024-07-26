@@ -18,14 +18,14 @@ export default function Component() {
       setloginstat("/Login");
       setlogintxt("Login");
     }
-    else if(Cookies.get('role') === EUserRole.COMPANY)
+    else if(Cookies.get('role') === EUserRole.USER)
       {
         setlogintxt("Dashboard");
-        setloginstat("/Admin");
+        setloginstat("/Dashboard");
       } 
     else {
       setlogintxt("Dashboard");
-      setloginstat("/Dashboard");
+      setloginstat("/Admin");
     }
   }, [email]);
 
