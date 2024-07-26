@@ -207,7 +207,7 @@ export default function Component() {
                   </svg>
                   Call Analysis
                 </Button>
-                <Button
+                {/* <Button
                   variant={"ghost"}
                   onClick={() => setActiveTab("upload")}
                   className="flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
@@ -229,7 +229,7 @@ export default function Component() {
                     <line x1="12" x2="12" y1="3" y2="15" />
                   </svg>
                   Upload
-                </Button>
+                </Button> */}
                 <Button
                   variant={"ghost"}
                   onClick={() => setActiveTab("uploadCustomer")}
@@ -310,7 +310,7 @@ export default function Component() {
               </div>
             )}
 
-            {activeTab === "upload" && (
+            {/* {activeTab === "upload" && (
               <div className="grid gap-6">
 
                 <Card className="flex flex-col">
@@ -422,7 +422,7 @@ export default function Component() {
                   </CardContent>
                 </Card>
               </div>
-            )}
+            )} */}
 
             {activeTab === "uploadCustomer" && (
               <div className="grid gap-6">

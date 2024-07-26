@@ -40,6 +40,9 @@ const UserInformationSchema = new mongoose.Schema({
   policyLink: { //For Company
     type: String
   },
+  agentNumber: { //For agent click to call action
+    type: String
+  },
 });
 
 export default mongoose.models.UserInformation || mongoose.model('UserInformation', UserInformationSchema);

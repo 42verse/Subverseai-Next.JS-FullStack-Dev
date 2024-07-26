@@ -60,6 +60,7 @@ export default function Login() {
           router.push('/Admin', { scroll: false });
           Cookies.set('agentId', response.data.userdata._id, { expires: 1, path: '/' });
           Cookies.set('companyId', response.data.userdata.companyId, { expires: 1, path: '/' });
+          Cookies.set('agentNumber', response.data.userdata.agentNumber, { expires: 1, path: '/' });
         }
         else{ router.push('/Dashboard', { scroll: false }); }
 

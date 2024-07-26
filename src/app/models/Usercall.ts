@@ -35,7 +35,7 @@ const Usercall = new mongoose.Schema({
         required : true
     },
     Transcript : {
-        type : String,
+        type : Array<any>,
         required : true
     },
     Summary : {
@@ -43,7 +43,7 @@ const Usercall = new mongoose.Schema({
         required : true
     },
     Analysis : {
-        type : String,
+        type : Object,
         required : true
     },
     companyId: {
