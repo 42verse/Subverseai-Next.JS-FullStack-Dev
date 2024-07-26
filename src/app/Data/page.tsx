@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/popover";
 import Cookies from "js-cookie";
 import { headers } from "next/headers";
+import { EUserRole } from "../interfaces/user.interface";
 
 
 
@@ -138,6 +139,7 @@ export default function Data() {
                         <TableHead className="text-center">Customer Name</TableHead>
                         <TableHead className="text-center">Policy No.</TableHead>
                         <TableHead className="text-center">Contact No.</TableHead>
+                        {Cookies.get('role') === EUserRole.COMPANY? <TableHead className="text-center">Agent Name</TableHead>: null}
                         <TableHead className="text-center">Time</TableHead>
                         <TableHead className="text-center">Call Status</TableHead>
                         <TableHead className="text-center">Disposition</TableHead>
@@ -170,6 +172,7 @@ export default function Data() {
                                 {customer?.policyId}
                             </TableCell>
                             <TableCell className="text-center">{customer?.customerNumber}</TableCell>
+                            {Cookies.get('role') === EUserRole.COMPANY?<TableCell className="text-center">-</TableCell>: null}
                             <TableCell className="text-center">-</TableCell>
                             <TableCell className="text-center">-</TableCell>
                             <TableCell className="text-center">-</TableCell>
@@ -185,6 +188,7 @@ export default function Data() {
                                     <TableCell className="font-medium text-center"></TableCell>
                                     <TableCell className="font-medium text-center"></TableCell>
                                     <TableCell className="font-medium text-center"></TableCell>
+                                    {Cookies.get('role') === EUserRole.COMPANY? <TableCell className="font-medium text-center">{userCall.agentName}</TableCell>: null} 
                                     <TableCell className="font-medium text-center">{userCall.callTime}</TableCell>
                                     <TableCell className="font-medium text-center">{userCall.callStatus}</TableCell>
                                     <TableCell className="font-medium text-center">{analysis ? analysis?.call_disposition : '-'}</TableCell>
@@ -192,7 +196,7 @@ export default function Data() {
                                     <TableCell>
                                         <Drawer>
                                             <DrawerTrigger asChild>
-                                                <Button variant="secondary" onClick={() => { fetchmyanalysis(userCall.callID.toString()); }}>View More</Button>
+                                                <Button variant="secondary" onClick={() => { fetchmyanalysis(userCall.callID.toString()); }}>Call Details</Button>
                                             </DrawerTrigger>
                                             <DrawerContent>
                                                 <div className="grid grid-cols-[40%_1fr] h-screen w-full bg-white text-white">
