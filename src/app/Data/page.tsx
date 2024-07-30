@@ -23,9 +23,25 @@ import {
 } from "@/components/ui/collapsible"
 import { ChevronsUpDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
-  
-
-
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from "@/components/ui/select"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import { CallStatuses, Dispositions, LeadStatuses, PresentationGiven, Time } from "../interfaces/user-calls.interface";
+import { Label } from "@/components/ui/label";
 
 interface TranscriptItem {
     transcript: string;
@@ -140,21 +156,194 @@ export default function Data() {
 
 
 
-            <div className="p-2 flex justify-between px-5">
-                <Link href="/Admin">
-                    <Button variant="outline">Back</Button>
-                </Link>
+            <div className="p-2 md:flex justify-between items-center px-5">
+                <div className="md:flex items-center w-[50%]">
+                    <Link href="/Admin">
+                        <Button variant="outline">Back</Button>
+                    </Link>
+                    <div className="md:px-5">
+                        <div className="grid grid-cols-1 md:flex w-full py-2">
+                            <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 border px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border sm:px-8 sm:py-2">
+                                <span className="text-xs text-muted-foreground">
+                                    Pending Calls
+                                </span>
+                                <span className="text-lg font-bold leading-none sm:text-3xl">
+                                    123
+                                </span>
+                            </div>
+                            <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 border px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border sm:px-8 sm:py-2">
+                                <span className="text-xs text-muted-foreground">
+                                    Calls Attempted
+                                </span>
+                                <span className="text-lg font-bold leading-none sm:text-3xl">
+                                    111
+                                </span>
+                            </div>
+                            <div className="w-full relative z-30 flex flex-1 flex-col justify-center gap-1 border px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border sm:px-8 sm:py-2">
+                                <span className="w-full text-xs text-muted-foreground">
+                                    Show Follow-Ups
+                                </span>
+                                <span className="text-lg font-bold leading-none sm:text-3xl">
+                                    143
+                                </span>
+                            </div>
+                            <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 border px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border sm:px-8 sm:py-2">
+                                <span className="text-xs text-muted-foreground">
+                                    Total Call Duration
+                                </span>
+                                <span className="text-lg font-bold leading-none sm:text-3xl">
+                                    123 
+                                    <span className="text-xs text-muted-foreground ml-2">mins</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
 
                 <Button className=" bg-blue-400 hover:bg-blue-500" onClick={getuserdatafromapi}>Load Data</Button>
             </div>
-            <div className="flex gap-2 py-2 px-5 justify-end">
-                <form className="w-1/4 flex" onSubmit={handleClickToCallAction}>    
-                    <Input placeholder="Enter Customer Number" className="rounded-r-none" value={contactNumber} onChange={(e) => setContactNumber(e.target.value)}/>
-                    <Button className="rounded-l-none" disabled={contactNumber.trim()===""}>Click to Call</Button>
-                </form>
+            <div className="md:flex justify-between px-5">
+                <div className="md:flex items-center gap-2 lg:gap-4">
+                    <div>
+                        <Select>
+                            <SelectTrigger className="w-full md:w-[180px]">
+                                <SelectValue placeholder="Select Time" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                <SelectItem value={Time.ALL} className="cursor-pointer">{Time.ALL.replace(/_/g, " ")}</SelectItem>
+                                <SelectItem value={Time.TODAY} className="cursor-pointer">{Time.TODAY.replace(/_/g, " ")}</SelectItem>
+                                <SelectItem value={Time.THIS_MONTH} className="cursor-pointer">{Time.THIS_MONTH.replace(/_/g, " ")}</SelectItem>
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>  
+                    </div>
 
-                {/* <Button>Filter</Button> */}
+                    <div>
+                        <Select>
+                            <SelectTrigger className="w-full md:w-[180px] my-2 md:my-0">
+                                <SelectValue placeholder="Select Agent" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                <SelectItem value="Agent1" className="cursor-pointer">Agent 1</SelectItem>
+                                <SelectItem value="Agent2" className="cursor-pointer">Agent 2</SelectItem>
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>  
+                    </div>
+
+                    <div className="mr-2 lg:mr-0">
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button variant="outline">Filter</Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[425px]">
+                                <DialogHeader>
+                                <DialogTitle>Filter Data</DialogTitle>
+                                </DialogHeader>
+                                <div className="">
+                                    <div>
+                                        <Label htmlFor="name" className="text-right">
+                                        Call Disposition
+                                        </Label>
+                                        <Select>
+                                            <SelectTrigger className="w-full mt-3">
+                                                <SelectValue placeholder="Select Call Disposition" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectGroup>
+                                                <SelectItem value={Dispositions.CUSTOMER_HANGUP.replace(/_/g, " ")} className="cursor-pointer">{Dispositions.CUSTOMER_HANGUP.replace(/_/g, " ")}</SelectItem>
+                                                <SelectItem value={Dispositions.NOT_INTERESTED.replace(/_/g, " ")} className="cursor-pointer">{Dispositions.NOT_INTERESTED.replace(/_/g, " ")}</SelectItem>
+                                                <SelectItem value={Dispositions.CALLBACK_REQUESTED.replace(/_/g, " ")} className="cursor-pointer">{Dispositions.CALLBACK_REQUESTED.replace(/_/g, " ")}</SelectItem>
+                                                <SelectItem value={Dispositions.LEAD_GENERATED.replace(/_/g, " ")} className="cursor-pointer">{Dispositions.LEAD_GENERATED.replace(/_/g, " ")}</SelectItem>
+                                                <SelectItem value={Dispositions.WRONG_NUMBER.replace(/_/g, " ")} className="cursor-pointer">{Dispositions.WRONG_NUMBER.replace(/_/g, " ")}</SelectItem>
+                                                <SelectItem value={Dispositions.FAKE_LEAD.replace(/_/g, " ")} className="cursor-pointer">{Dispositions.FAKE_LEAD.replace(/_/g, " ")}</SelectItem>
+                                                <SelectItem value={Dispositions.BOUGHT_OTHER_POLICY.replace(/_/g, " ")} className="cursor-pointer">{Dispositions.BOUGHT_OTHER_POLICY.replace(/_/g, " ")}</SelectItem> 
+                                                </SelectGroup>
+                                            </SelectContent>
+                                        </Select>  
+                                    </div>
+                                </div>
+                                <div className="">
+                                    <div>
+                                        <Label htmlFor="name" className="text-right">
+                                            Lead Status 
+                                        </Label>
+                                        <Select>
+                                            <SelectTrigger className="w-full mt-3">
+                                                <SelectValue placeholder="Select Lead Status" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectGroup>
+                                                    <SelectItem value={LeadStatuses.NOT_INTERESTED.replace(/_/g, " ")} className="cursor-pointer">{LeadStatuses.NOT_INTERESTED.replace(/_/g, " ")}</SelectItem>
+                                                    <SelectItem value={LeadStatuses.ASKED_TO_CALL_BACK.replace(/_/g, " ")} className="cursor-pointer">{LeadStatuses.ASKED_TO_CALL_BACK.replace(/_/g, " ")}</SelectItem>
+                                                    <SelectItem value={LeadStatuses.INTEREST_SHOWN.replace(/_/g, " ")} className="cursor-pointer">{LeadStatuses.INTEREST_SHOWN.replace(/_/g, " ")}</SelectItem>
+                                                    <SelectItem value={LeadStatuses.DOCUMENTS_SHARED.replace(/_/g, " ")} className="cursor-pointer">{LeadStatuses.DOCUMENTS_SHARED.replace(/_/g, " ")}</SelectItem>
+                                                    <SelectItem value={LeadStatuses.PAYMENT_DONE.replace(/_/g, " ")} className="cursor-pointer">{LeadStatuses.PAYMENT_DONE.replace(/_/g, " ")}</SelectItem>
+                                                </SelectGroup>
+                                            </SelectContent>
+                                        </Select>  
+                                    </div>
+                                </div>
+
+                                <div className="">
+                                    <div>
+                                        <Label htmlFor="name" className="text-right">
+                                            Presentation given
+                                        </Label>
+                                        <Select>
+                                            <SelectTrigger className="w-full mt-3">
+                                                <SelectValue placeholder="Select Presentation given" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectGroup>
+                                                    <SelectItem value={PresentationGiven.YES.replace(/_/g, " ")} className="cursor-pointer">{PresentationGiven.YES.replace(/_/g, " ")}</SelectItem>
+                                                    <SelectItem value={PresentationGiven.NO.replace(/_/g, " ")} className="cursor-pointer">{PresentationGiven.NO.replace(/_/g, " ")}</SelectItem>
+                                                </SelectGroup>
+                                            </SelectContent>
+                                        </Select>  
+                                    </div>
+                                </div>
+
+                                <div className="">
+                                    <div>
+                                        <Label htmlFor="name" className="text-right">
+                                         Call Status
+                                        </Label>
+                                        <Select>
+                                            <SelectTrigger className="w-full mt-3">
+                                                <SelectValue placeholder="Select Call Status" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectGroup>
+                                                    <SelectItem value={CallStatuses.CALL_ANSWERED.replace(/_/g, " ")} className="cursor-pointer">{CallStatuses.CALL_ANSWERED.replace(/_/g, " ")}</SelectItem>
+                                                    <SelectItem value={CallStatuses.CALL_PENDING_WHEN_EMPTY.replace(/_/g, " ")} className="cursor-pointer">{CallStatuses.CALL_PENDING_WHEN_EMPTY.replace(/_/g, " ")}</SelectItem>
+                                                    <SelectItem value={CallStatuses.CALL_REJECTED.replace(/_/g, " ")} className="cursor-pointer">{CallStatuses.CALL_REJECTED.replace(/_/g, " ")}</SelectItem>
+                                                    <SelectItem value={CallStatuses.COULD_NOT_CONNECT.replace(/_/g, " ")} className="cursor-pointer">{CallStatuses.COULD_NOT_CONNECT.replace(/_/g, " ")}</SelectItem>
+                                                    <SelectItem value={CallStatuses.DID_NOT_PICK_UO.replace(/_/g, " ")} className="cursor-pointer">{CallStatuses.DID_NOT_PICK_UO.replace(/_/g, " ")}</SelectItem>
+                                                </SelectGroup>
+                                            </SelectContent>
+                                        </Select>  
+                                    </div>
+                                </div>
+                                <DialogFooter>
+                                <Button type="submit">Apply</Button>
+                                <Button>Reset</Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                </div>
+                <div className="flex gap-2 py-2 justify-end">
+                    <form className="w-full flex" onSubmit={handleClickToCallAction}>    
+                        <Input placeholder="Enter Customer Number" className="rounded-r-none" value={contactNumber} onChange={(e) => setContactNumber(e.target.value)}/>
+                        <Button className="rounded-l-none" disabled={contactNumber.trim()===""}>Click to Call</Button>
+                    </form>
+                </div>
             </div>
+            
             <Table className="h-[60vh]">
                 <TableCaption>To See Data Click on Top Right Button. :) </TableCaption>
                 <TableHeader>
