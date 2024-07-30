@@ -30,6 +30,10 @@ const Usercall = new mongoose.Schema({
         type: String,
         required: true,
     },
+    Call_Duration: {
+        type: Number,
+        required: true,
+    },
     Usecase : {
         type : String,
         required : true

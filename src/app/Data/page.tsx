@@ -1,23 +1,29 @@
 //this is data page
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef/* , useEffect */ } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableRow, TableHeader } from "@/components/ui/table";
 import { Drawer, DrawerClose, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
-import { Progress } from "@/components/ui/progress";
+/* import { Progress } from "@/components/ui/progress"; */
 import Link from "next/link";
 import Loading from "@/app/components/Loading";
 import axios from "axios";
-import { is } from "@react-three/fiber/dist/declarations/src/core/utils";
-import {
+/* import {
     Popover,
     PopoverContent,
     PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/components/ui/popover"; */
 import Cookies from "js-cookie";
-import { headers } from "next/headers";
+/* import { headers } from "next/headers"; */
 import { EUserRole } from "../interfaces/user.interface";
-
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+import { ChevronsUpDown } from "lucide-react";
+import { Input } from "@/components/ui/input";
+  
 
 
 
@@ -56,7 +62,7 @@ interface AnalysisItem {
     Issue_Resolved_Status: string;
 }
 
-interface Userdata {
+/* interface Userdata {
     Issue_Resolved_Status: any;
     Call_ID: number;
     Agent_Name: string;
@@ -65,11 +71,11 @@ interface Userdata {
     Call_Recording_URL: string;
     Analysis: AnalysisItem;
 
-}
+} */
 
 
 export default function Data() {
-    const [showAudio, setShowAudio] = useState<boolean>(false);
+    //const [showAudio, setShowAudio] = useState<boolean>(false);
     const [currentTime, setCurrentTime] = useState<number>(0);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -77,6 +83,7 @@ export default function Data() {
     const [apianalysis, setApianalysis] = useState<any>();
     const [apisummary, setApisummary] = useState<string[]>([]);
     const [apitranscript, setApitranscript] = useState<TranscriptItem[]>([]);
+    const [contactNumber, setContactNumber] = useState("");
 
     // Function to handle playing audio from a specific time
     const playFromSpecificTime = (time: number) => {
@@ -113,6 +120,15 @@ export default function Data() {
         const response = await axios.post("/api/callAction", { contactNumber: contactNumber,agentId: Cookies.get("agentNumber") });
     }
 
+    const handleClickToCallAction = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if(!contactNumber.trim()){
+            return;
+        }
+
+        callActionHandler(contactNumber.trim())
+    }
 
     return (
         <>
@@ -131,7 +147,14 @@ export default function Data() {
 
                 <Button className=" bg-blue-400 hover:bg-blue-500" onClick={getuserdatafromapi}>Load Data</Button>
             </div>
+            <div className="flex gap-2 py-2 px-5 justify-end">
+                <form className="w-1/4 flex" onSubmit={handleClickToCallAction}>    
+                    <Input placeholder="Enter Customer Number" className="rounded-r-none" value={contactNumber} onChange={(e) => setContactNumber(e.target.value)}/>
+                    <Button className="rounded-l-none" disabled={contactNumber.trim()===""}>Click to Call</Button>
+                </form>
 
+                {/* <Button>Filter</Button> */}
+            </div>
             <Table className="h-[60vh]">
                 <TableCaption>To See Data Click on Top Right Button. :) </TableCaption>
                 <TableHeader>
@@ -146,11 +169,19 @@ export default function Data() {
                         <TableHead className="text-center">Remarks</TableHead>
                         <TableHead>Action</TableHead>
                     </TableRow>
+                    
                 </TableHeader>
                 <TableBody>
                     {userdata.map((customer,index: number) => {
-                        return <><TableRow key={`customer-${index}`}>
-                            <TableCell className="font-medium text-center">{customer?.customerName}</TableCell>
+                        return <Collapsible asChild key={`customer-${index}`}>
+                        <>
+                          <TableRow>
+                            <TableCell className="font-medium text-center flex">
+                                <CollapsibleTrigger asChild className={customer.userCalls.length>1 ?"" : 'invisible'}><ChevronsUpDown className="cursor-pointer" /></CollapsibleTrigger>
+                                <p className="flex flex-grow justify-center">
+                                    <span className="break-words">{customer?.customerName || '-'}</span>
+                                </p>
+                            </TableCell>
                             <TableCell className="font-medium text-center">
                                 {/* <Popover>
                                     <PopoverTrigger><Button className="w-[9vw]" variant="default">{customer.Agent_Name}</Button></PopoverTrigger>
@@ -169,227 +200,233 @@ export default function Data() {
                                         </div>
                                     </PopoverContent>
                                 </Popover> */}
-                                 <Link href={customer?.policyLink || ""} target="_blank" className="text-blue-600 underline">{customer?.policyId}</Link>
+                                {customer?.policyLink? <Link href={customer.policyLink} target="_blank" className="text-blue-600 underline">{customer.policyId}</Link>: "-"}
                             </TableCell>
-                            <TableCell className="text-center">{customer?.customerNumber}</TableCell>
+                            <TableCell className="text-center">{customer?.customerNumber || '-'}</TableCell>
                             {Cookies.get('role') === EUserRole.COMPANY?<TableCell className="text-center">-</TableCell>: null}
-                            <TableCell className="text-center">-</TableCell>
-                            <TableCell className="text-center">-</TableCell>
-                            <TableCell className="text-center">-</TableCell>
-                            <TableCell className="text-center">-</TableCell>
+                            <TableCell className="text-center">{customer.userCalls.length > 0 ? customer.userCalls[0]?.callTime || '-' : "-"}</TableCell>
+                            <TableCell className="text-center">{customer.userCalls.length > 0 ? customer.userCalls[0]?.callStatus || '-' : "-"}</TableCell>
+                            <TableCell className="text-center">{customer.userCalls.length > 0 ? customer.userCalls[0]?.analysis?.call_disposition || '-' : "-"}</TableCell>
+                            <TableCell className="text-center">{customer.userCalls.length > 0 ? customer.userCalls[0]?.analysis?.remarks || '-' : "-"}</TableCell>
                             <TableCell>
                                {Cookies.get('agentId')? <Button variant="outline" onClick={() => { callActionHandler(customer.customerNumber) }}>Click to Call</Button> : null}   
+                               {/* TODO: For one user calls => call details button?  */}
                             </TableCell>
-                        </TableRow>
-                        {
-                            customer.userCalls.map((userCall:any,index1:number) => {
+                          </TableRow>                     
+                          {
+                            customer.userCalls.length>1 ? customer.userCalls.map((userCall:any,index1:number) => {
                                 const analysis = typeof userCall.analysis === "string" ? JSON.parse(userCall.analysis) : userCall.analysis;
-                                return <TableRow key={`customer-${index}-user-call-${index1}`}>
-                                    <TableCell className="font-medium text-center"></TableCell>
-                                    <TableCell className="font-medium text-center"></TableCell>
-                                    <TableCell className="font-medium text-center"></TableCell>
-                                    {Cookies.get('role') === EUserRole.COMPANY? <TableCell className="font-medium text-center">{userCall.agentName}</TableCell>: null} 
-                                    <TableCell className="font-medium text-center">{userCall.callTime}</TableCell>
-                                    <TableCell className="font-medium text-center">{userCall.callStatus}</TableCell>
-                                    <TableCell className="font-medium text-center">{analysis ? analysis?.call_disposition : '-'}</TableCell>
-                                    <TableCell className="font-medium text-center">{analysis ? analysis?.remarks : '-'}</TableCell>
-                                    <TableCell>
-                                        <Drawer>
-                                            <DrawerTrigger asChild>
-                                                <Button variant="secondary" onClick={() => { fetchmyanalysis(userCall.callID.toString()); }}>Call Details</Button>
-                                            </DrawerTrigger>
-                                            <DrawerContent>
-                                                <div className="grid grid-cols-[40%_1fr] h-screen w-full bg-white text-white">
-                                                    <div className="bg-muted p-6 flex flex-col gap-4">
-                                                        <div className="flex items-center justify-between">
-                                                            <h2 className="text-xl font-bold">SubverseAI</h2>
+                                return <CollapsibleContent asChild key={`customer-${index}-user-call-${index1}`}> 
+                                  <>
+                                    <TableRow className="w-full">
+                                        <TableCell className="font-medium text-center"></TableCell>
+                                        <TableCell className="font-medium text-center"></TableCell>
+                                        <TableCell className="font-medium text-center"></TableCell>
+                                        {Cookies.get('role') === EUserRole.COMPANY? <TableCell className="font-medium text-center">{userCall.agentName}</TableCell>: null} 
+                                        <TableCell className="font-medium text-center">{userCall.callTime}</TableCell>
+                                        <TableCell className="font-medium text-center">{userCall.callStatus}</TableCell>
+                                        <TableCell className="font-medium text-center">{analysis ? analysis?.call_disposition || '-' : '-'}</TableCell>
+                                        <TableCell className="font-medium text-center">{analysis ? analysis?.remarks || '-' : '-'}</TableCell>
+                                        <TableCell>
+                                            <Drawer>
+                                                <DrawerTrigger asChild>
+                                                    <Button variant="secondary" onClick={() => { fetchmyanalysis(userCall.callID.toString()); }}>Call Details</Button>
+                                                </DrawerTrigger>
+                                                <DrawerContent>
+                                                    <div className="grid grid-cols-[40%_1fr] h-screen w-full bg-white text-white">
+                                                        <div className="bg-muted p-6 flex flex-col gap-4">
+                                                            <div className="flex items-center justify-between">
+                                                                <h2 className="text-xl font-bold">SubverseAI</h2>
+                                                            </div>
+                                                            <div className="flex-1 overflow-auto">
+                                                                <audio
+                                                                    src={userCall.callRecordingURL}
+                                                                    controls
+                                                                    className="w-full"
+                                                                    ref={audioRef}
+                                                                />
+                                                                <div className="mt-4">
+                                                                    <h3 className="text-lg font-bold">Transcript</h3>
+                                                                    <p className="mt-2 text-muted-foreground h-[75vh] overflow-auto">
+                                                                        {apitranscript.map((call, index) => (
+                                                                            <span key={index}>
+                                                                                <span
+                                                                                    className="cursor-pointer"
+                                                                                    onClick={() => {
+                                                                                        setCurrentTime(call.start);
+                                                                                        playFromSpecificTime(call.start);
+                                                                                    }}
+                                                                                >
+                                                                                    {call.speaker === 1 ? (
+                                                                                        <>
+                                                                                            <br />
+                                                                                            <span className="text-red-500">Customer: </span> {call.transcript}
+                                                                                            <br />
+                                                                                        </>
+                                                                                    ) : (
+                                                                                        <>
+                                                                                            <br />
+                                                                                            <span className="text-blue-500">Agent: </span> {call.transcript}
+                                                                                            <br />
+                                                                                        </>
+                                                                                    )}
+                                                                                </span>{" "}
+                                                                            </span>
+                                                                        ))}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex-1 overflow-auto">
-                                                            <audio
-                                                                src={userCall.callRecordingURL}
-                                                                controls
-                                                                className="w-full"
-                                                                ref={audioRef}
-                                                            />
-                                                            <div className="mt-4">
-                                                                <h3 className="text-lg font-bold">Transcript</h3>
-                                                                <p className="mt-2 text-muted-foreground h-[75vh] overflow-auto">
-                                                                    {apitranscript.map((call, index) => (
-                                                                        <span key={index}>
-                                                                            <span
-                                                                                className="cursor-pointer"
-                                                                                onClick={() => {
-                                                                                    setCurrentTime(call.start);
-                                                                                    playFromSpecificTime(call.start);
-                                                                                }}
-                                                                            >
-                                                                                {call.speaker === 1 ? (
-                                                                                    <>
-                                                                                        <br />
-                                                                                        <span className="text-red-500">Customer: </span> {call.transcript}
-                                                                                        <br />
-                                                                                    </>
-                                                                                ) : (
-                                                                                    <>
-                                                                                        <br />
-                                                                                        <span className="text-blue-500">Agent: </span> {call.transcript}
-                                                                                        <br />
-                                                                                    </>
-                                                                                )}
-                                                                            </span>{" "}
-                                                                        </span>
-                                                                    ))}
-                                                                </p>
+
+
+
+                                                        <div className="h-screen bg-background p-6 flex flex-col gap-4">
+                                                            <div className="flex items-center justify-between">
+                                                                <h2 className="text-xl font-bold">Analysis</h2>
+                                                                <DrawerClose asChild>
+                                                                    <Button onClick={() => {
+                                                                        setIsLoading(true);
+                                                                        setApianalysis(undefined);
+                                                                        setApisummary([]);
+                                                                        setApitranscript([]);
+                                                                        setIsLoading(false);
+                                                                    }
+                                                                    } variant="outline">Back</Button>
+                                                                </DrawerClose>
+                                                            </div>
+                                                            <div className="flex-1 overflow-auto">
+
+                                                                <div>
+                                                                    {apianalysis && (
+                                                                        <div className="flex flex-col gap-6 bg-[#27272A] text-black w-[97%] p-4 rounded-2xl ">
+                                                                            {/* <div className="border p-3 rounded-xl bg-zinc-700">
+                                                                                <div className="flex justify-between">
+                                                                                <span className="font-bold text-xl text-white">Sentiment Analysis</span><span className={getTextColor(apianalysis?.sentiment_analysis?.overall_score || 0)}>{apianalysis?.sentiment_analysis?.overall_score || '-'}/10</span>
+                                                                                </div>
+                                                                                {apianalysis?.sentiment_analysis?.detail ? <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.sentiment_analysis.detail}</div> : null}
+                                                                                <div className="flex gap-3 md:gap-5 mt-3">
+                                                                                    <p><span className="font-medium text-white">Empathy </span><span className={getTextColor(apianalysis?.sentiment_analysis?.empathy || 0)}>{apianalysis?.sentiment_analysis?.empathy || '-'}/10</span></p>
+                                                                                    <p><span className="font-medium text-white">Apology </span><span className={getTextColor(apianalysis?.sentiment_analysis?.apology || 0)}>{apianalysis?.sentiment_analysis?.apology || '-'}/10</span></p>
+                                                                                    <p><span className="font-medium text-white">Listening Rapport </span><span className={getTextColor(apianalysis?.sentiment_analysis?.listening_rapport || 0)}>{apianalysis?.sentiment_analysis?.listening_rapport || '-'}/10</span></p>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <div className="border p-3 rounded-xl bg-zinc-700">
+                                                                                <div className="flex justify-between">
+                                                                                <span className="font-bold text-xl text-white">Call Opening</span> <span className={getTextColor(apianalysis?.call_opening?.overall_score || 0)}>{apianalysis?.call_opening?.overall_score || '-'}/10</span>
+                                                                                </div>
+                                                                                {apianalysis?.call_opening?.detail ? <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.call_opening.detail}</div> : null}
+                                                                                <div className="flex gap-3 md:gap-5 mt-3">
+                                                                                    <p><span className="font-medium text-white">Greetings:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.call_opening?.greetings || '-'}</span></p>
+                                                                                    <p><span className="font-medium text-white">Brand Name:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.call_opening?.brand_name || '-'}</span></p>
+                                                                                    <p><span className="font-medium text-white">Name Exchange: </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.call_opening?.name_exchange || '-'}</span></p>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <div className="border p-3 rounded-xl bg-zinc-700">
+                                                                                <div className="flex justify-between items-center">
+                                                                                <span className="font-bold text-xl text-white">Context Setting</span> <span className={getTextColor(apianalysis?.context_setting?.score || '0')}>{apianalysis?.context_setting?.score || '-'}/10</span>
+                                                                                </div>
+                                                                                {apianalysis?.context_setting?.detail ? <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.context_setting.detail}</div> :null}
+                                                                            </div>
+
+                                                                            <div className="border p-3 rounded-xl bg-zinc-700">
+                                                                                <div className="flex justify-between">
+                                                                                <span className="font-bold text-xl text-white">Process Information</span> <span className={getTextColor(apianalysis?.process_information?.score || 0)}>{apianalysis?.process_information?.score || '-'}/10</span>
+                                                                                </div>
+                                                                                {apianalysis?.process_information?.detail ? <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.process_information.detail}</div> : null}
+                                                                                <div className="flex gap-3 md:gap-5 mt-3">
+                                                                                    <p><span className="font-medium text-white">Objection:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.process_information?.objection || '-'}</span></p>
+                                                                                    <p><span className="font-medium text-white">Escalation:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.process_information?.escalation || '-'}</span></p>
+                                                                                    <p><span className="font-medium text-white">Information Disclosure: </span><span className={getTextColor(apianalysis?.process_information?.information_disclosure || 0)}>{apianalysis?.process_information?.information_disclosure || '-'}/10</span></p>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <div className="border p-3 rounded-xl bg-zinc-700">
+                                                                                <div className="flex justify-between">
+                                                                                <span className="font-bold text-xl text-white">Zero Tolerance</span>
+                                                                                </div>
+                                                                                <div className="flex gap-3 md:gap-5 mt-3">
+                                                                                    <p><span className="font-medium text-white">Rude Unprofessional:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.zero_tolerance?.rude_unprofessional || '-'}</span></p>
+                                                                                    <p><span className="font-medium text-white">Dead Air:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.zero_tolerance?.dead_air || '-'}</span></p>
+                                                                                    <p><span className="font-medium text-white">Misleading: </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.zero_tolerance?.misleading || '-'}</span></p>
+                                                                                    <p><span className="font-medium text-white">Fraudulent: </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.zero_tolerance?.fraudulent || '-'}</span></p>
+                                                                                </div>
+                                                                            </div> */}
+
+                                                                            {/* <div className="border p-3 rounded-xl bg-zinc-700">
+                                                                                <div className="flex justify-between">
+                                                                                <span className="font-bold text-xl text-white">Zero Tolerance</span><span className={getTextColor(apianalysis.zero_tolerance.score)}>{apianalysis.zero_tolerance.score}/10</span>
+                                                                                </div>
+                                                                                <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.zero_tolerance.detail}</div>
+                                                                            </div> */}
+
+                                                                            {/* <div className="border p-3 rounded-xl bg-zinc-700">
+                                                                                <div className="flex justify-between">
+                                                                                <span className="font-bold text-xl text-white">Call Flow Optimization</span> <span className={getTextColor(apianalysis.Call_Flow_Optimization.score)}>{apianalysis.Call_Flow_Optimization.score}/10</span>
+                                                                                </div>
+                                                                                <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.Call_Flow_Optimization.detail}</div>
+                                                                            </div> */}
+                                                                            <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
+                                                                                <div className="font-bold text-xl text-white">Presentation Given</div>
+                                                                                <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.presentation_given || '-'}</div>
+                                                                            </div>
+
+                                                                            <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
+                                                                                <div className="font-bold text-xl text-white">Policy Pitched</div>
+                                                                                <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.policy_pitched || '-'}</div>
+                                                                            </div>
+
+                                                                            <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
+                                                                                <div className="font-bold text-xl text-white">Lead Status </div>
+                                                                                <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.lead_status || '-'}</div>
+                                                                            </div>
+
+                                                                            <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
+                                                                                <div className="font-bold text-xl text-white">Call Disposition </div>
+                                                                                <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl"> {apianalysis?.call_disposition || '-'}</div>
+                                                                            </div>
+                
+                                                                            <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
+                                                                                <div className="font-bold text-xl text-white">Call Back Time</div>
+                                                                                <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.call_back_time || '-'}</div>
+                                                                            </div>
+
+                                                                            <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
+                                                                                <div className="font-bold text-xl text-white">Dead Air</div>
+                                                                                <div className={getTextColor(apianalysis?.dead_air || 0)}>{apianalysis.dead_air || 0}/10</div>
+                                                                            </div>
+
+                                                                            <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
+                                                                                <div className="font-bold text-xl text-white">Remarks</div>
+                                                                                <div  className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.remarks || '-'}</div>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div><br /><br /><br />
+                                                                <div className="flex flex-col gap-6 bg-[#27272A] text-white w-[97%] p-4 rounded-2xl ">
+                                                                    <h3 className="text-2xl font-bold text-white">Summary</h3>
+                                                                    {Array.isArray(apisummary)? apisummary.map((item, index) => (
+                                                                        <div className="border rounded-2xl p-2 bg-zinc-700  font-semibold" key={`summary-${index}`}>
+                                                                            {item}
+                                                                        </div>
+                                                                    )): <div className="border rounded-2xl p-2 bg-zinc-700  font-semibold">
+                                                                    {apisummary}
+                                                                </div>}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
-
-
-
-                                                    <div className="h-screen bg-background p-6 flex flex-col gap-4">
-                                                        <div className="flex items-center justify-between">
-                                                            <h2 className="text-xl font-bold">Analysis</h2>
-                                                            <DrawerClose asChild>
-                                                                <Button onClick={() => {
-                                                                    setIsLoading(true);
-                                                                    setApianalysis(undefined);
-                                                                    setApisummary([]);
-                                                                    setApitranscript([]);
-                                                                    setIsLoading(false);
-                                                                }
-                                                                } variant="outline">Back</Button>
-                                                            </DrawerClose>
-                                                        </div>
-                                                        <div className="flex-1 overflow-auto">
-
-                                                            <div>
-                                                                {apianalysis && (
-                                                                    <div className="flex flex-col gap-6 bg-[#27272A] text-black w-[97%] p-4 rounded-2xl ">
-                                                                        {/* <div className="border p-3 rounded-xl bg-zinc-700">
-                                                                            <div className="flex justify-between">
-                                                                            <span className="font-bold text-xl text-white">Sentiment Analysis</span><span className={getTextColor(apianalysis?.sentiment_analysis?.overall_score || 0)}>{apianalysis?.sentiment_analysis?.overall_score || '-'}/10</span>
-                                                                            </div>
-                                                                            {apianalysis?.sentiment_analysis?.detail ? <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.sentiment_analysis.detail}</div> : null}
-                                                                            <div className="flex gap-3 md:gap-5 mt-3">
-                                                                                <p><span className="font-medium text-white">Empathy </span><span className={getTextColor(apianalysis?.sentiment_analysis?.empathy || 0)}>{apianalysis?.sentiment_analysis?.empathy || '-'}/10</span></p>
-                                                                                <p><span className="font-medium text-white">Apology </span><span className={getTextColor(apianalysis?.sentiment_analysis?.apology || 0)}>{apianalysis?.sentiment_analysis?.apology || '-'}/10</span></p>
-                                                                                <p><span className="font-medium text-white">Listening Rapport </span><span className={getTextColor(apianalysis?.sentiment_analysis?.listening_rapport || 0)}>{apianalysis?.sentiment_analysis?.listening_rapport || '-'}/10</span></p>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="border p-3 rounded-xl bg-zinc-700">
-                                                                            <div className="flex justify-between">
-                                                                            <span className="font-bold text-xl text-white">Call Opening</span> <span className={getTextColor(apianalysis?.call_opening?.overall_score || 0)}>{apianalysis?.call_opening?.overall_score || '-'}/10</span>
-                                                                            </div>
-                                                                            {apianalysis?.call_opening?.detail ? <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.call_opening.detail}</div> : null}
-                                                                            <div className="flex gap-3 md:gap-5 mt-3">
-                                                                                <p><span className="font-medium text-white">Greetings:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.call_opening?.greetings || '-'}</span></p>
-                                                                                <p><span className="font-medium text-white">Brand Name:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.call_opening?.brand_name || '-'}</span></p>
-                                                                                <p><span className="font-medium text-white">Name Exchange: </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.call_opening?.name_exchange || '-'}</span></p>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="border p-3 rounded-xl bg-zinc-700">
-                                                                            <div className="flex justify-between items-center">
-                                                                            <span className="font-bold text-xl text-white">Context Setting</span> <span className={getTextColor(apianalysis?.context_setting?.score || '0')}>{apianalysis?.context_setting?.score || '-'}/10</span>
-                                                                            </div>
-                                                                            {apianalysis?.context_setting?.detail ? <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.context_setting.detail}</div> :null}
-                                                                        </div>
-
-                                                                        <div className="border p-3 rounded-xl bg-zinc-700">
-                                                                            <div className="flex justify-between">
-                                                                            <span className="font-bold text-xl text-white">Process Information</span> <span className={getTextColor(apianalysis?.process_information?.score || 0)}>{apianalysis?.process_information?.score || '-'}/10</span>
-                                                                            </div>
-                                                                            {apianalysis?.process_information?.detail ? <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.process_information.detail}</div> : null}
-                                                                            <div className="flex gap-3 md:gap-5 mt-3">
-                                                                                <p><span className="font-medium text-white">Objection:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.process_information?.objection || '-'}</span></p>
-                                                                                <p><span className="font-medium text-white">Escalation:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.process_information?.escalation || '-'}</span></p>
-                                                                                <p><span className="font-medium text-white">Information Disclosure: </span><span className={getTextColor(apianalysis?.process_information?.information_disclosure || 0)}>{apianalysis?.process_information?.information_disclosure || '-'}/10</span></p>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="border p-3 rounded-xl bg-zinc-700">
-                                                                            <div className="flex justify-between">
-                                                                            <span className="font-bold text-xl text-white">Zero Tolerance</span>
-                                                                            </div>
-                                                                            <div className="flex gap-3 md:gap-5 mt-3">
-                                                                                <p><span className="font-medium text-white">Rude Unprofessional:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.zero_tolerance?.rude_unprofessional || '-'}</span></p>
-                                                                                <p><span className="font-medium text-white">Dead Air:  </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.zero_tolerance?.dead_air || '-'}</span></p>
-                                                                                <p><span className="font-medium text-white">Misleading: </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.zero_tolerance?.misleading || '-'}</span></p>
-                                                                                <p><span className="font-medium text-white">Fraudulent: </span><span className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.zero_tolerance?.fraudulent || '-'}</span></p>
-                                                                            </div>
-                                                                        </div> */}
-
-                                                                        {/* <div className="border p-3 rounded-xl bg-zinc-700">
-                                                                            <div className="flex justify-between">
-                                                                            <span className="font-bold text-xl text-white">Zero Tolerance</span><span className={getTextColor(apianalysis.zero_tolerance.score)}>{apianalysis.zero_tolerance.score}/10</span>
-                                                                            </div>
-                                                                            <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.zero_tolerance.detail}</div>
-                                                                        </div> */}
-
-                                                                        {/* <div className="border p-3 rounded-xl bg-zinc-700">
-                                                                            <div className="flex justify-between">
-                                                                            <span className="font-bold text-xl text-white">Call Flow Optimization</span> <span className={getTextColor(apianalysis.Call_Flow_Optimization.score)}>{apianalysis.Call_Flow_Optimization.score}/10</span>
-                                                                            </div>
-                                                                            <div className="border-2 border-white font-semibold w-fit px-5 py-1 rounded-xl text-[#27272A] bg-slate-300">{apianalysis.Call_Flow_Optimization.detail}</div>
-                                                                        </div> */}
-                                                                        <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
-                                                                            <div className="font-bold text-xl text-white">Presentation Given</div>
-                                                                            <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.presentation_given || '-'}</div>
-                                                                        </div>
-
-                                                                        <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
-                                                                            <div className="font-bold text-xl text-white">Policy Pitched</div>
-                                                                            <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.policy_pitched || '-'}</div>
-                                                                        </div>
-
-                                                                        <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
-                                                                            <div className="font-bold text-xl text-white">Lead Status </div>
-                                                                            <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.lead_status || '-'}</div>
-                                                                        </div>
-
-                                                                        <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
-                                                                            <div className="font-bold text-xl text-white">Call Disposition </div>
-                                                                            <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl"> {apianalysis?.call_disposition || '-'}</div>
-                                                                        </div>
-            
-                                                                        <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
-                                                                            <div className="font-bold text-xl text-white">Call Back Time</div>
-                                                                            <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.call_back_time || '-'}</div>
-                                                                        </div>
-
-                                                                        <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
-                                                                            <div className="font-bold text-xl text-white">Dead Air</div>
-                                                                            <div className={getTextColor(apianalysis?.dead_air || 0)}>{apianalysis.dead_air || 0}/10</div>
-                                                                        </div>
-
-                                                                        <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
-                                                                            <div className="font-bold text-xl text-white">Remarks</div>
-                                                                            <div  className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.remarks || '-'}</div>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </div><br /><br /><br />
-                                                            <div className="flex flex-col gap-6 bg-[#27272A] text-white w-[97%] p-4 rounded-2xl ">
-                                                                <h3 className="text-2xl font-bold text-white">Summary</h3>
-                                                                {Array.isArray(apisummary)? apisummary.map((item, index) => (
-                                                                    <div className="border rounded-2xl p-2 bg-zinc-700  font-semibold" key={`summary-${index}`}>
-                                                                        {item}
-                                                                    </div>
-                                                                )): <div className="border rounded-2xl p-2 bg-zinc-700  font-semibold">
-                                                                {apisummary}
-                                                            </div>}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </DrawerContent>
-                                    </Drawer>
-                                    </TableCell>
-                                </TableRow>
-                            })
-                        }
+                                                </DrawerContent>
+                                            </Drawer>
+                                        </TableCell>
+                                    </TableRow>
+                                  </>
+                                </CollapsibleContent>
+                            }) : null
+                          }
                         </>
+                      </Collapsible>
                     })}
                 </TableBody>
             </Table>
