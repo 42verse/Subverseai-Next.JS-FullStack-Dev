@@ -1,36 +1,36 @@
-export enum Time {
-  ALL = "All",
-  TODAY = "Today",
-  THIS_MONTH = "This month",
+export enum ETimeFilter {
+  ALL = "all",
+  TODAY = "today",
+  THIS_MONTH = "this_month",
 }
 
-export enum Dispositions {
-  CUSTOMER_HANGUP = "Customer Hangup",
-  NOT_INTERESTED = "Not interested",
-  CALLBACK_REQUESTED = "Call back requested",
-  LEAD_GENERATED = "Lead generated",
-  WRONG_NUMBER = "Wrong number",
-  FAKE_LEAD = "Fake lead",
-  BOUGHT_OTHER_POLICY = "Bought other policy",
+export enum ECallDispositions {
+  CUSTOMER_HANGUP = "customer_hangup",
+  NOT_INTERESTED = "not_interested",
+  CALLBACK_REQUESTED = "call_back_requested",
+  LEAD_GENERATED = "lead_generated",
+  WRONG_NUMBER = "wrong_number",
+  FAKE_LEAD = "fake_lead",
+  BOUGHT_OTHER_POLICY = "bought_other_policy",
 }
 
-export enum LeadStatuses {
-  NOT_INTERESTED = "Not interested",
-  ASKED_TO_CALL_BACK = "Asked to call back",
-  INTEREST_SHOWN = "Interest shown",
-  DOCUMENTS_SHARED = "Documents shared",
-  PAYMENT_DONE = "Payment done",
+export enum ELeadStatuses {
+  NOT_INTERESTED = "not_interested",
+  ASKED_TO_CALL_BACK = "asked_to_call_back",
+  INTEREST_SHOWN = "interest_shown",
+  DOCUMENTS_SHARED = "documents_shared",
+  PAYMENT_DONE = "payment_done",
 }
 
-export enum CallStatuses {
-  CALL_ANSWERED = "Call Answered",
-  COULD_NOT_CONNECT = "Couldn't Connect",
-  DID_NOT_PICK_UO = "Didn't pick up",
-  CALL_REJECTED = "Call Rejected",
-  CALL_PENDING_WHEN_EMPTY = "Call Pending when empty",
+export enum ECallStatuses {
+  CALL_ANSWERED = "call_answered",
+  COULD_NOT_CONNECT = "couldn't_connect",
+  DID_NOT_PICK_UP = "didn't_pick_up",
+  CALL_REJECTED = "call_rejected",
+  CALL_PENDING = "call_pending",
 }
 
-export enum PresentationGiven {
-  YES = "Yes",
-  NO = "No",
+export enum EPresentationGiven {
+  YES = "yes",
+  NO = "no",
 }

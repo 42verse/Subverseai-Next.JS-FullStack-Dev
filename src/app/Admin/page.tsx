@@ -1,5 +1,4 @@
 "use client"
-import { Suspense } from 'react'
 import { useState, useEffect } from "react";
 import { toast } from "sonner"
 import Link from "next/link";
@@ -8,18 +7,18 @@ import { Card, CardHeader, CardDescription, CardTitle, CardContent } from "@/com
 import axios from "axios";
 import { Toaster } from "@/components/ui/sonner"
 import Loading from "@/app/components/Loading"
-import { set } from 'mongoose';
 import { useRouter } from 'next/navigation'
 import Cookies from 'js-cookie'
 import { EUserRole } from '../interfaces/user.interface';
+import { ECallStatuses } from "../interfaces/user-calls.interface";
 
-interface TranscriptItem {
+/* interface TranscriptItem {
   transcript: string;
   start: number;
   speaker: number;
-}
+} */
 
-interface AnalysisItem {
+/* interface AnalysisItem {
   Customer_Sentiment: {
     score: string,
     detail: string
@@ -52,28 +51,36 @@ interface AnalysisItem {
     score: string,
     detail: string
   }
-}
+} */
 
 
 export default function Component() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("overview");
-  const [audioUrl, setAudioUrl] = useState("");
-  const [usecase, setUsecase] = useState("");
+  /* const [audioUrl, setAudioUrl] = useState("");
+  const [usecase, setUsecase] = useState(""); */
   const [isLoading, setIsLoading] = useState(false);
   const [customerUrl, setCustomerUrl] = useState("")
-  const [apianalysis, setApianalysis] = useState<AnalysisItem>();
+  /* const [apianalysis, setApianalysis] = useState<AnalysisItem>();
   const [apisummary, setApisummary] = useState<string[]>([]);
-  const [apitranscript, setApitranscript] = useState<TranscriptItem[]>([]);
-
-
+  const [apitranscript, setApitranscript] = useState<TranscriptItem[]>([]); */
+  const [isCompany, setIsCompany] = useState(false);
 
   if(Cookies.get('role') === EUserRole.USER)
     {
       router.push("/Login");
     }
 
-  const runcsvtojsonapi = async () => {
+  useEffect(() => {
+    if(Cookies.get('role') && Cookies.get('role') !== EUserRole.USER){
+      const isRoleCompany = Cookies.get('role') === EUserRole.COMPANY;
+      setIsCompany(isRoleCompany);
+    }else{
+      router.push('/Login');
+    }
+  }, [])
+
+  /* const runcsvtojsonapi = async () => {
     setIsLoading(true);
     const response = await axios.post("/api/savecsvtodb",{companyId: Cookies.get("companyId")});
     toast(response.data.message);
@@ -92,16 +99,20 @@ export default function Component() {
     } catch (error) {
       console.error('Error uploading file:', error);
     }
-  };
+  }; */
 
   const saveCustomerInformation = async () => {
     setIsLoading(true);
     const response = await axios.post("/api/saveCustomerInfo",{
       companyId: Cookies.get("companyId"),
-      inputFileUrl: customerUrl,
-      agentId: Cookies.get("agentId"),
+      inputFileUrl: customerUrl
     });
-    toast(response.data.message);
+    if(response.data.message){
+      toast.success(response.data.message);
+    }
+    if(response.data.error){
+      toast.error(response.data.error);
+    }
     setIsLoading(false);
   };
 
@@ -162,9 +173,9 @@ export default function Component() {
             
             <div className="flex-1 overflow-auto py-2">
               <nav className="grid items-start px-4 text-sm font-medium">
-                <Button
+                {isCompany ? <Button
                   variant={"ghost"}
-                  onClick={() => setActiveTab("overview")}
+                  onClick={() => setActiveTab("dashboard")}
                   className="flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
                 >
 
@@ -183,8 +194,8 @@ export default function Component() {
                     <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z" />
                     <polyline points="9 22 9 12 15 12 15 22" />
                   </svg>
-                  Overview
-                </Button>
+                  Dashboard
+                </Button>: null}
                 <Button
                   variant={"ghost"}
                   onClick={()=>{router.push('/Data', { scroll: false })}}
@@ -205,7 +216,29 @@ export default function Component() {
                     <path d="M3 3v18h18" />
                     <path d="m19 9-5 5-4-4-3 3" />
                   </svg>
-                  Call Analysis
+                  Call History
+                </Button>
+                <Button
+                  variant={"ghost"}
+                  onClick={()=>{router.push(`/Data?callStatus=${ECallStatuses.CALL_PENDING}`,{ scroll: false })}}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M3 3v18h18" />
+                    <path d="m19 9-5 5-4-4-3 3" />
+                  </svg>
+                  Pending Calls
                 </Button>
                 {/* <Button
                   variant={"ghost"}
@@ -230,7 +263,7 @@ export default function Component() {
                   </svg>
                   Upload
                 </Button> */}
-                <Button
+                {isCompany ? <Button
                   variant={"ghost"}
                   onClick={() => setActiveTab("uploadCustomer")}
                   className="flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
@@ -252,7 +285,7 @@ export default function Component() {
                     <line x1="12" x2="12" y1="3" y2="15" />
                   </svg>
                   Upload Customer
-                </Button>
+                </Button>: null}
               </nav>
             </div>
           </div>
@@ -287,7 +320,7 @@ export default function Component() {
           </Button>
           </Link>
           <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 lg:p-8 xl:p-10">
-            {activeTab === "overview" && (
+            {isCompany && activeTab === "dashboard" && (
               <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-1 text-black">
                 <Card className="flex flex-col">
                   <CardHeader>
@@ -424,7 +457,7 @@ export default function Component() {
               </div>
             )} */}
 
-            {activeTab === "uploadCustomer" && (
+            {isCompany && activeTab === "uploadCustomer" && (
               <div className="grid gap-6">
 
                 <Card className="flex flex-col">
@@ -438,7 +471,7 @@ export default function Component() {
                         <Button onClick={saveCustomerInformation}>Save</Button>
                     </div>       
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-4"> 
                     <div className="flex items-center justify-center w-full h-32 border-2 border-dashed rounded-md border-muted-foreground/20 hover:border-primary transition-colors">
                       <input
                         className="w-full h-full text-4xl p-5"
