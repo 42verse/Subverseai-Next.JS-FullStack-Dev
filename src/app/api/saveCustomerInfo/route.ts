@@ -10,11 +10,14 @@ export async function POST(req: NextRequest, res: NextResponse) {
     await dbConnect();
     const body = await req.json();
     const companyId = body.companyId || "";
-    const agentId = body.agentId || "";
     
     if(!companyId){
         return NextResponse.json({ error: 'Company id is missing' });
     }
+
+    const agents = await UserInformation.find({companyId: companyId}).select("name username");
+    const agentNameIdMapping:any = {};
+    agents.map((agent: any) => agentNameIdMapping[agent.name]= agent._id);
     
     const inputFileUrl = body.inputFileUrl;
     if(!inputFileUrl){
@@ -32,8 +35,11 @@ export async function POST(req: NextRequest, res: NextResponse) {
     }
 
     const policyLink = findCompany.policyLink;
+    const promiseArray:any[] = [];
     for (let i = 1; i < response.data.data.length; i++) {
       const customerNumber = response.data.data[i]?.Customer_Number;
+      const agentId = agentNameIdMapping[response.data.data[i]?.Agent_Name]
+
       const customerInfo:any = {
         customerName: response.data.data[i]?.Customer_Name || '',
         email: response.data.data[i]?.Customer_Email || '',
@@ -43,41 +49,30 @@ export async function POST(req: NextRequest, res: NextResponse) {
         policyLink: policyLink && response.data.data[i]?.Policy_ID ? `${policyLink}${response.data.data[i]?.Policy_ID}` : ''
       }
 
-      if(!customerNumber){
-        console.log('Customer number is missing >>> ')
-        console.log(customerInfo)
+      if(!customerNumber || !agentId){
         continue;
       }
 
-      if(agentId){
-        customerInfo.agentId = agentId
-      }
-
-      try {
-        await CustomerInformation.findOneAndUpdate(
-          {
-            companyId: new mongoose.Types.ObjectId(companyId),
-            customerNumber: customerNumber
-          },
-          {
-            $set: { ...customerInfo }
-          },
-          {
-            upsert: true
-          }
-        )
-        console.log('-------------------------')
-        console.log(customerInfo)
-      } catch (error) {
-        console.log(`Error while updating or inserting customer information`,error);
-        continue;
-      }
+      promiseArray.push(CustomerInformation.findOneAndUpdate(
+        {
+          companyId: new mongoose.Types.ObjectId(companyId),
+          agentId: new mongoose.Types.ObjectId(agentId),
+          customerNumber: customerNumber
+        },
+        {
+          $set: { ...customerInfo }
+        },
+        {
+          upsert: true
+        }
+      ))   
     }
+    await Promise.allSettled(promiseArray)
 
     return NextResponse.json({ message: 'Saved Customer information successfully!' });
   }
   catch (error) {
-    console.error("error:", error);
+    console.log(error)
     return NextResponse.json({ error: 'Something went wrong' });
   }
 }

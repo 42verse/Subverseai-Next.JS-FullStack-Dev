@@ -3,3 +3,9 @@ export enum EUserRole {
   USER = 'user',
   AGENT = 'agent'
 }
+
+export interface AgentDropdownList {
+  _id: string;
+  name: string;
+  username: string;
+}

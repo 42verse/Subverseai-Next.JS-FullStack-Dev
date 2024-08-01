@@ -1,6 +1,6 @@
 //this is data page
 "use client";
-import { useState, useRef/* , useEffect */ } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableRow, TableHeader } from "@/components/ui/table";
 import { Drawer, DrawerClose, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
@@ -15,17 +15,37 @@ import axios from "axios";
 } from "@/components/ui/popover"; */
 import Cookies from "js-cookie";
 /* import { headers } from "next/headers"; */
-import { EUserRole } from "../interfaces/user.interface";
+import { AgentDropdownList, EUserRole } from "../interfaces/user.interface";
 import {
     Collapsible,
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import { ChevronsUpDown } from "lucide-react";
+import { ChevronsUpDown, EyeIcon, PhoneCallIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
-  
-
-
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from "@/components/ui/select"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import {ECallDispositions, ECallStatuses, ELeadStatuses, EPresentationGiven, ETimeFilter } from "../interfaces/user-calls.interface";
+import { Label } from "@/components/ui/label";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 
 interface TranscriptItem {
     transcript: string;
@@ -33,7 +53,7 @@ interface TranscriptItem {
     speaker: number;
 }
 
-interface AnalysisItem {
+/* interface AnalysisItem {
     Customer_Sentiment: {
         score: string;
         detail: string;
@@ -60,7 +80,7 @@ interface AnalysisItem {
     };
     Call_Completion_Status: string;
     Issue_Resolved_Status: string;
-}
+} */
 
 /* interface Userdata {
     Issue_Resolved_Status: any;
@@ -72,6 +92,7 @@ interface AnalysisItem {
     Analysis: AnalysisItem;
 
 } */
+const followUpsFilter = [ECallDispositions.LEAD_GENERATED.replace(/_/g," "),ECallDispositions.CALLBACK_REQUESTED.replace(/_/g," ")]
 
 
 export default function Data() {
@@ -84,7 +105,61 @@ export default function Data() {
     const [apisummary, setApisummary] = useState<string[]>([]);
     const [apitranscript, setApitranscript] = useState<TranscriptItem[]>([]);
     const [contactNumber, setContactNumber] = useState("");
+    const [isCompany, setIsCompany] = useState(false);
+    const router = useRouter();
+    const [agentList, setAgentList] = useState<Array<AgentDropdownList>>([]);
+    const [selectedTimeFilter, setSelectedTimeFilter] = useState("all");
+    const [selectedAgent, setSelectedAgent] = useState("all");
+    const [selectedCallDisposition, setSelectedCallDisposition] = useState("");
+    const [selectedLeadStatus, setSelectedLeadStatus] = useState("");
+    const [selectedPresentationGiven, setSelectedPresentationGiven] = useState("");
+    const [selectedCallStatus, setSelectedCallStatus] = useState("");
+    const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
+    const [callStats, setCallStats] = useState<any>(null);
+    const [isCallHistory, setIsCallHistory] = useState(true);
+    const searchParams = useSearchParams();
+    const [isFollowUpFilter, setIsFollowUpFilter] = useState(false);
 
+    const getCompanyAgents = async () => {
+        if(!Cookies.get("companyId")){
+          router.push('/Login');
+        }
+
+        const response = await axios.post("/api/getAgents", { companyId: Cookies.get("companyId")});
+        if(response.data?.agents){
+            setAgentList(response.data.agents)
+        }
+    }
+
+    useEffect(() => {
+      if(Cookies.get('role') && Cookies.get('role') !== EUserRole.USER){
+        const isRoleCompany = Cookies.get('role') === EUserRole.COMPANY;
+        setIsCompany(isRoleCompany);
+
+        if(isRoleCompany){
+          getCompanyAgents();
+        }
+      }else{
+        router.push('/Login');
+      }
+    }, [])
+
+    useEffect(() => {
+       const callStatus = searchParams.get('callStatus');
+        if(callStatus === ECallStatuses.CALL_PENDING){
+            setIsCallHistory(false);
+            setSelectedCallStatus(ECallStatuses.CALL_PENDING);
+        }else{
+            setIsCallHistory(true);
+            setSelectedCallStatus("");
+        }
+
+        if(isCompany){
+           resetFilter();
+        }
+        setIsFollowUpFilter(false);
+    }, [searchParams])
+      
     // Function to handle playing audio from a specific time
     const playFromSpecificTime = (time: number) => {
         if (audioRef.current) {
@@ -94,14 +169,40 @@ export default function Data() {
     };
 
 
+    useEffect(() => {
+      if(selectedTimeFilter || selectedAgent){
+        getuserdatafromapi();
+      }
+    },[selectedTimeFilter,selectedAgent,isCallHistory])
 
 
     const getuserdatafromapi = async () => {
         setIsLoading(true);
-        const response = await axios.post("/api/getcalldata",{companyId: Cookies.get('companyId'),agentId: Cookies.get('agentId')});
+        const companyId = Cookies.get('companyId');
+        const agentId = isCompany ? selectedAgent : Cookies.get('agentId');
+        const timeFilter = selectedTimeFilter;
+        const callDisposition = selectedCallDisposition;
+        const leadStatus = selectedLeadStatus;
+        const presentationGiven = selectedPresentationGiven;
+        const callStatus = selectedCallStatus;
+        const role = Cookies.get('role');
+
+        const response = await axios.post("/api/getcalldata",{
+            companyId,
+            agentId: agentId === "all" ? "": agentId,
+            timeFilter,
+            callStatus,
+            presentationGiven,
+            leadStatus,
+            callDisposition,
+            role,
+            isCallHistory
+        });
         setIsLoading(false);
-        setuserdata(response.data);
-        // console.log(response.data);
+        if(response?.data){
+            setuserdata(response.data.callData);
+            setCallStats(response.data.callStats)
+        }
     };
 
 
@@ -113,11 +214,16 @@ export default function Data() {
         setApitranscript(response.data.transcriptWithSpeakers);
         setApianalysis(response.data.jsonconvertedanalysis);
         setIsLoading(false);
-        // console.log(response.data);
     };
 
     const callActionHandler = async (contactNumber: string) => {
-        const response = await axios.post("/api/callAction", { contactNumber: contactNumber,agentId: Cookies.get("agentNumber") });
+        const response:any = await axios.post("/api/callAction", { contactNumber: contactNumber,agentId: Cookies.get("agentNumber") });
+        if(response.data?.message){
+            toast.success(response.data.message)
+        }
+        if(response.data?.error){
+            toast.error(response.data.error)
+        }
     }
 
     const handleClickToCallAction = async (e: React.FormEvent) => {
@@ -130,6 +236,43 @@ export default function Data() {
         callActionHandler(contactNumber.trim())
     }
 
+    const resetFilter = () => {
+        setSelectedCallDisposition("")
+        setSelectedLeadStatus("")
+        setSelectedPresentationGiven("")
+        setSelectedCallStatus("")
+    }
+
+    const applyFilter = (e:  React.FormEvent) => {
+        e.preventDefault();
+        setIsFilterDialogOpen(false);
+        getuserdatafromapi();
+    }
+
+    const followUpFilterHandler = async () => {
+        setIsLoading(true);
+        setIsFollowUpFilter(true);
+        resetFilter()
+        const companyId = Cookies.get('companyId');
+        const agentId = isCompany ? selectedAgent : Cookies.get('agentId');
+        const timeFilter = selectedTimeFilter;
+        const role = Cookies.get('role');
+
+        const response = await axios.post("/api/getcalldata",{
+            companyId,
+            agentId: agentId === "all" ? "": agentId,
+            timeFilter,
+            role,
+            isCallHistory: true,
+            followUps: followUpsFilter
+        });
+        setIsLoading(false);
+        if(response.data){
+            setuserdata(response.data.callData);
+            setCallStats(response.data.callStats)
+        }
+    }
+
     return (
         <>
             {isLoading ? (
@@ -137,32 +280,199 @@ export default function Data() {
             ) : (
                 <div></div>
             )}
-
-
-
-            <div className="p-2 flex justify-between px-5">
-                <Link href="/Admin">
-                    <Button variant="outline">Back</Button>
-                </Link>
+            <Toaster position="bottom-right" />
+            <div className="p-2.5 md:flex justify-between px-5">
+                <div className="md:flex w-[50%]">
+                    <Link href="/Admin">
+                        <Button variant="outline">Back</Button>
+                    </Link>
+                    <div className="md:px-5">
+                        <div className="grid grid-cols-1 md:flex w-full">
+                            <Card className={`rounded-none hover:bg-muted cursor-pointer ${isCallHistory && !isFollowUpFilter ?'bg-muted': ''}`}  onClick={() => { setIsFollowUpFilter(false); router.replace(`/Data`); getuserdatafromapi()}}>
+                                <CardContent className="py-2">
+                                    <CardTitle className="text-sm text-muted-foreground">Calls Attempted</CardTitle>
+                                    <CardDescription className="text-lg text-center text-white">{callStats?.callsAttempted ? callStats.callsAttempted : 0}</CardDescription>
+                                </CardContent>
+                            </Card>
+                            {isCompany ? <Card className="rounded-none">
+                                <CardContent className="py-2">
+                                    <CardTitle className="text-sm text-muted-foreground">Total Call Duration</CardTitle>
+                                    <CardDescription className="text-lg text-center text-white">{callStats?.totalCallDuration ? (callStats.totalCallDuration/60).toFixed(1) : 0} mins</CardDescription>
+                                </CardContent>
+                            </Card> : null}
+                            <Card className={`rounded-none hover:bg-muted cursor-pointer ${!isCallHistory && !isFollowUpFilter ?'bg-muted': ''}`} onClick={() => { setIsFollowUpFilter(false); router.push(`/Data?callStatus=${ECallStatuses.CALL_PENDING}`)}}>
+                                <CardContent className="py-2">
+                                    <CardTitle className="text-sm text-muted-foreground">Pending Calls</CardTitle>
+                                    <CardDescription className="text-lg text-center text-white">{callStats?.pendingCalls ? callStats.pendingCalls : 0}</CardDescription>
+                                </CardContent>
+                            </Card>
+                            <Card className={`rounded-none hover:bg-muted cursor-pointer ${isFollowUpFilter?'bg-muted': ''}`} onClick={() => followUpFilterHandler()}>
+                                <CardContent className="py-2">
+                                    <CardTitle className="text-sm text-muted-foreground">Follow Ups</CardTitle>
+                                    <CardDescription className="text-lg text-center text-white">{callStats?.followUps ? callStats.followUps : 0}</CardDescription>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
+                </div>
+                
 
                 <Button className=" bg-blue-400 hover:bg-blue-500" onClick={getuserdatafromapi}>Load Data</Button>
             </div>
-            <div className="flex gap-2 py-2 px-5 justify-end">
-                <form className="w-1/4 flex" onSubmit={handleClickToCallAction}>    
-                    <Input placeholder="Enter Customer Number" className="rounded-r-none" value={contactNumber} onChange={(e) => setContactNumber(e.target.value)}/>
-                    <Button className="rounded-l-none" disabled={contactNumber.trim()===""}>Click to Call</Button>
-                </form>
+            <div className="md:flex justify-between px-5 mt-2">
+                <div className="md:flex items-center gap-2 lg:gap-4">
+                    {isCallHistory ? <div>
+                        <Select onValueChange={(value) => setSelectedTimeFilter(value)} value={selectedTimeFilter}>
+                            <SelectTrigger className="w-full md:w-[180px] capitalize">
+                                <SelectValue placeholder="Select Time" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    {Object.values(ETimeFilter).map((value,index) => {
+                                        return <SelectItem value={value} className="cursor-pointer capitalize" key={`time-filter-option-${index}`}>{value.replace(/_/g, " ")}</SelectItem>
+                                    })}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>  
+                    </div> : null}
 
-                {/* <Button>Filter</Button> */}
+                    {isCompany ? <div>
+                         <Select onValueChange={(value) => setSelectedAgent(value)} value={selectedAgent}>
+                            <SelectTrigger className="w-full md:w-[180px] my-2 md:my-0">
+                                <SelectValue placeholder="Select Agent" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    <SelectItem value="all" className="cursor-pointer">All</SelectItem>
+                                    {agentList.map((agent,index) => {
+                                        return <SelectItem key={`agent-option-${index}`} value={agent._id} className="cursor-pointer">{agent.name}</SelectItem>
+                                    })}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>  
+                    </div> : null}
+
+                    {isCompany && isCallHistory ? <div className="mr-2 lg:mr-0">
+                        <Dialog open={isFilterDialogOpen} onOpenChange={(open) => setIsFilterDialogOpen(open)}>
+                            <DialogTrigger asChild>
+                                <Button variant="outline" onClick={() => {setIsFilterDialogOpen(true)}}>Filter</Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[425px]">
+                                <DialogHeader>
+                                <DialogTitle>Filter Data</DialogTitle>
+                                </DialogHeader>
+                                <div className="">
+                                    <div>
+                                        <Label htmlFor="name" className="text-right">
+                                        Call Disposition
+                                        </Label>
+                                        <Select onValueChange={(value) => setSelectedCallDisposition(value)} value={selectedCallDisposition}>
+                                            <SelectTrigger className="w-full mt-3 capitalize">
+                                                <SelectValue placeholder="Select Call Disposition" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectGroup>
+                                                    {
+                                                        Object.values(ECallDispositions).map((value,index) => {
+                                                            return <SelectItem value={value} className="cursor-pointer capitalize" key={`call-disposition-option-${index}`}>{value.replace(/_/g," ")}</SelectItem>
+                                                        })
+                                                    }
+                                                </SelectGroup>
+                                            </SelectContent>
+                                        </Select>  
+                                    </div>
+                                </div>
+                                <div className="">
+                                    <div>
+                                        <Label htmlFor="name" className="text-right">
+                                            Lead Status 
+                                        </Label>
+                                        <Select onValueChange={(value) => setSelectedLeadStatus(value)} value={selectedLeadStatus}>
+                                            <SelectTrigger className="w-full mt-3 capitalize">
+                                                <SelectValue placeholder="Select Lead Status" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectGroup>
+                                                    {
+                                                        Object.values(ELeadStatuses).map((value,index) => {
+                                                            return <SelectItem value={value} className="cursor-pointer capitalize" key={`lead-status-option-${index}`}>{value.replace(/_/g," ")}</SelectItem>
+                                                        })
+                                                    }
+                                                </SelectGroup>
+                                            </SelectContent>
+                                        </Select>  
+                                    </div>
+                                </div>
+
+                                <div className="">
+                                    <div>
+                                        <Label htmlFor="name" className="text-right">
+                                            Presentation given
+                                        </Label>
+                                        <Select onValueChange={(value) => setSelectedPresentationGiven(value)} value={selectedPresentationGiven}>
+                                            <SelectTrigger className="w-full mt-3 capitalize">
+                                                <SelectValue placeholder="Select Presentation given" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectGroup>
+                                                    {
+                                                        Object.values(EPresentationGiven).map((value,index) => {
+                                                            return <SelectItem value={value} className="cursor-pointer capitalize" key={`presentation-given-option-${index}`}>{value.replace(/_/g," ")}</SelectItem>
+                                                        })
+                                                    }
+                                                </SelectGroup>
+                                            </SelectContent>
+                                        </Select>  
+                                    </div>
+                                </div>
+
+                                <div className="">
+                                    <div>
+                                        <Label htmlFor="name" className="text-right">
+                                         Call Status
+                                        </Label>
+                                        <Select onValueChange={(value) => setSelectedCallStatus(value)} value={selectedCallStatus}>
+                                            <SelectTrigger className="w-full mt-3 capitalize">
+                                                <SelectValue placeholder="Select Call Status" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectGroup>
+                                                    {
+                                                        Object.values(ECallStatuses).map((value,index) => {
+                                                            if(value !== ECallStatuses.CALL_PENDING){
+                                                                return <SelectItem value={value} className="cursor-pointer capitalize" key={`call-status-option-${index}`}>{value.replace(/_/g," ")}</SelectItem>
+                                                            }
+                                                        })
+                                                    }
+                                                </SelectGroup>
+                                            </SelectContent>
+                                        </Select>  
+                                    </div>
+                                </div>
+                                <DialogFooter>
+                                <Button type="submit" onClick={applyFilter}>Apply</Button>
+                                <Button onClick={resetFilter}>Reset</Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                    </div> : null}
+                </div>
+                {!isCompany? <div className="flex gap-2 py-2 justify-end">
+                    <form className="w-full flex" onSubmit={handleClickToCallAction}>    
+                        <Input placeholder="Enter Customer Number" className="rounded-r-none" value={contactNumber} onChange={(e) => setContactNumber(e.target.value)}/>
+                        <Button className="rounded-l-none" disabled={contactNumber.trim()===""}>Click to Call</Button>
+                    </form>
+                </div>:null}
             </div>
-            <Table className="h-[60vh]">
+            <div  className="h-[60vh] overflow-auto m-3">
+            <Table>
                 <TableCaption>To See Data Click on Top Right Button. :) </TableCaption>
-                <TableHeader>
+                <TableHeader className="!sticky top-0 z-30">
                     <TableRow>
                         <TableHead className="text-center">Customer Name</TableHead>
                         <TableHead className="text-center">Policy No.</TableHead>
                         <TableHead className="text-center">Contact No.</TableHead>
-                        {Cookies.get('role') === EUserRole.COMPANY? <TableHead className="text-center">Agent Name</TableHead>: null}
+                        {isCompany? <TableHead className="text-center">Agent Name</TableHead>: null}
                         <TableHead className="text-center">Time</TableHead>
                         <TableHead className="text-center">Call Status</TableHead>
                         <TableHead className="text-center">Disposition</TableHead>
@@ -175,7 +485,7 @@ export default function Data() {
                     {userdata.map((customer,index: number) => {
                         return <Collapsible asChild key={`customer-${index}`}>
                         <>
-                          <TableRow>
+                          <TableRow className="bg-muted/30">
                             <TableCell className="font-medium text-center flex">
                                 <CollapsibleTrigger asChild className={customer.userCalls.length>1 ?"" : 'invisible'}><ChevronsUpDown className="cursor-pointer" /></CollapsibleTrigger>
                                 <p className="flex flex-grow justify-center">
@@ -203,14 +513,133 @@ export default function Data() {
                                 {customer?.policyLink? <Link href={customer.policyLink} target="_blank" className="text-blue-600 underline">{customer.policyId}</Link>: "-"}
                             </TableCell>
                             <TableCell className="text-center">{customer?.customerNumber || '-'}</TableCell>
-                            {Cookies.get('role') === EUserRole.COMPANY?<TableCell className="text-center">-</TableCell>: null}
+                            {isCompany? <TableCell className="text-center">{customer.userCalls.length > 0 ? customer.userCalls[0]?.agentName || '-' : "-"}</TableCell>: null}
                             <TableCell className="text-center">{customer.userCalls.length > 0 ? customer.userCalls[0]?.callTime || '-' : "-"}</TableCell>
                             <TableCell className="text-center">{customer.userCalls.length > 0 ? customer.userCalls[0]?.callStatus || '-' : "-"}</TableCell>
                             <TableCell className="text-center">{customer.userCalls.length > 0 ? customer.userCalls[0]?.analysis?.call_disposition || '-' : "-"}</TableCell>
                             <TableCell className="text-center">{customer.userCalls.length > 0 ? customer.userCalls[0]?.analysis?.remarks || '-' : "-"}</TableCell>
-                            <TableCell>
-                               {Cookies.get('agentId')? <Button variant="outline" onClick={() => { callActionHandler(customer.customerNumber) }}>Click to Call</Button> : null}   
-                               {/* TODO: For one user calls => call details button?  */}
+                            <TableCell className="flex gap-2">
+                               {!isCompany? <Button size="sm" variant="secondary" onClick={() => { callActionHandler(customer.customerNumber) }}><PhoneCallIcon /></Button> : null}   
+                               {customer.userCalls.length > 0 ? <Drawer>
+                                    <DrawerTrigger asChild>
+                                        <Button size="sm" variant="secondary" onClick={() => { fetchmyanalysis(customer.userCalls[0].callID.toString()); }}><EyeIcon/></Button>
+                                    </DrawerTrigger>
+                                    <DrawerContent>
+                                        <div className="grid grid-cols-[40%_1fr] h-screen w-full bg-white text-white">
+                                            <div className="bg-muted p-6 flex flex-col gap-4">
+                                                <div className="flex items-center justify-between">
+                                                    <h2 className="text-xl font-bold">SubverseAI</h2>
+                                                </div>
+                                                <div className="flex-1 overflow-auto">
+                                                    <audio
+                                                        src={customer.userCalls[0].callRecordingURL}
+                                                        controls
+                                                        className="w-full"
+                                                        ref={audioRef}
+                                                    />
+                                                    <div className="mt-4">
+                                                        <h3 className="text-lg font-bold">Transcript</h3>
+                                                        <p className="mt-2 text-muted-foreground h-[75vh] overflow-auto">
+                                                            {apitranscript.map((call, index) => (
+                                                                <span key={index}>
+                                                                    <span
+                                                                        className="cursor-pointer"
+                                                                        onClick={() => {
+                                                                            setCurrentTime(call.start);
+                                                                            playFromSpecificTime(call.start);
+                                                                        }}
+                                                                    >
+                                                                        {call.speaker === 1 ? (
+                                                                            <>
+                                                                                <br />
+                                                                                <span className="text-red-500">Customer: </span> {call.transcript}
+                                                                                <br />
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <br />
+                                                                                <span className="text-blue-500">Agent: </span> {call.transcript}
+                                                                                <br />
+                                                                            </>
+                                                                        )}
+                                                                    </span>{" "}
+                                                                </span>
+                                                            ))}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="h-screen bg-background p-6 flex flex-col gap-4">
+                                                <div className="flex items-center justify-between">
+                                                    <h2 className="text-xl font-bold">Analysis</h2>
+                                                    <DrawerClose asChild>
+                                                        <Button onClick={() => {
+                                                            setIsLoading(true);
+                                                            setApianalysis(undefined);
+                                                            setApisummary([]);
+                                                            setApitranscript([]);
+                                                                        setIsLoading(false);
+                                                                    }
+                                                                    } variant="outline">Back</Button>
+                                                                </DrawerClose>
+                                                            </div>
+                                                            <div className="flex-1 overflow-auto">
+
+                                                                <div>
+                                                                    {apianalysis && (
+                                                                        <div className="flex flex-col gap-6 bg-[#27272A] text-black w-[97%] p-4 rounded-2xl ">
+                                                                            <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
+                                                                                <div className="font-bold text-xl text-white">Presentation Given</div>
+                                                                                <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.presentation_given || '-'}</div>
+                                                                            </div>
+
+                                                                            <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
+                                                                    <div className="font-bold text-xl text-white">Policy Pitched</div>
+                                                                    <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.policy_pitched || '-'}</div>
+                                                                </div>
+
+                                                                <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
+                                                                    <div className="font-bold text-xl text-white">Lead Status </div>
+                                                                    <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.lead_status || '-'}</div>
+                                                                </div>
+
+                                                                <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
+                                                                    <div className="font-bold text-xl text-white">Call Disposition </div>
+                                                                    <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl"> {apianalysis?.call_disposition || '-'}</div>
+                                                                </div>
+                
+                                                                <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
+                                                                    <div className="font-bold text-xl text-white">Call Back Time</div>
+                                                                    <div className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.call_back_time || '-'}</div>
+                                                                </div>
+
+                                                                <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
+                                                                    <div className="font-bold text-xl text-white">Dead Air</div>
+                                                                    <div className={getTextColor(apianalysis?.dead_air || 0)}>{apianalysis.dead_air || 0}/10</div>
+                                                                </div>
+
+                                                                <div className="border p-3 rounded-xl bg-zinc-700 flex justify-between">
+                                                                    <div className="font-bold text-xl text-white">Remarks</div>
+                                                                    <div  className="font-bold p-2 bg-slate-300 text-[#27272A] rounded-2xl">{apianalysis?.remarks || '-'}</div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div><br /><br /><br />
+                                                    <div className="flex flex-col gap-6 bg-[#27272A] text-white w-[97%] p-4 rounded-2xl ">
+                                                        <h3 className="text-2xl font-bold text-white">Summary</h3>
+                                                        {Array.isArray(apisummary)? apisummary.map((item, index) => (
+                                                            <div className="border rounded-2xl p-2 bg-zinc-700  font-semibold" key={`summary-${index}`}>
+                                                                {item}
+                                                            </div>
+                                                        )): <div className="border rounded-2xl p-2 bg-zinc-700  font-semibold">
+                                                        {apisummary}
+                                                    </div>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </DrawerContent>
+                                    </Drawer>: null}
                             </TableCell>
                           </TableRow>                     
                           {
@@ -222,15 +651,15 @@ export default function Data() {
                                         <TableCell className="font-medium text-center"></TableCell>
                                         <TableCell className="font-medium text-center"></TableCell>
                                         <TableCell className="font-medium text-center"></TableCell>
-                                        {Cookies.get('role') === EUserRole.COMPANY? <TableCell className="font-medium text-center">{userCall.agentName}</TableCell>: null} 
-                                        <TableCell className="font-medium text-center">{userCall.callTime}</TableCell>
-                                        <TableCell className="font-medium text-center">{userCall.callStatus}</TableCell>
+                                        {isCompany? <TableCell className="font-medium text-center">{userCall?.agentName || '-'}</TableCell>: null} 
+                                        <TableCell className="font-medium text-center">{userCall?.callTime || '-'}</TableCell>
+                                        <TableCell className="font-medium text-center">{userCall?.callStatus || '-'}</TableCell>
                                         <TableCell className="font-medium text-center">{analysis ? analysis?.call_disposition || '-' : '-'}</TableCell>
                                         <TableCell className="font-medium text-center">{analysis ? analysis?.remarks || '-' : '-'}</TableCell>
                                         <TableCell>
                                             <Drawer>
                                                 <DrawerTrigger asChild>
-                                                    <Button variant="secondary" onClick={() => { fetchmyanalysis(userCall.callID.toString()); }}>Call Details</Button>
+                                                    <Button variant="secondary" size="sm" onClick={() => { fetchmyanalysis(userCall.callID.toString()); }}><EyeIcon /></Button>
                                                 </DrawerTrigger>
                                                 <DrawerContent>
                                                     <div className="grid grid-cols-[40%_1fr] h-screen w-full bg-white text-white">
@@ -430,6 +859,7 @@ export default function Data() {
                     })}
                 </TableBody>
             </Table>
+            </div>
         </>
     );
 }

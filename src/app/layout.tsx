@@ -4,7 +4,8 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
-
+import { Suspense } from "react";
+import Loading from "@/app/components/Loading";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -28,9 +29,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Navbar/>
-          {children}
-          <Footer />
+          <Suspense fallback={<Loading />}>
+            <Navbar/>
+            {children}
+            <Footer />
+          </Suspense>
         </ThemeProvider>
       </body>
     </html>
