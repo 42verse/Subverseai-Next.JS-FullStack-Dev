@@ -5,29 +5,47 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import Cookies from 'js-cookie';
 import { EUserRole } from "../interfaces/user.interface";
+import { useRouter } from "next/navigation";
 
 export default function Component() {
   const [email, setEmail] = useState("");
   const [loginstat, setloginstat] = useState("");
   const [logintxt, setlogintxt] = useState("Request Demo");
+  const router = useRouter();
 
   useEffect(() => {
-    setEmail(Cookies.get('email') || "");
+    const email = Cookies.get("email");
+    const role = Cookies.get("role");
 
-    if(email === "") {
-      setloginstat("/Login");
-      setlogintxt("Login");
+    if(!email || !role){
+      deleteCookies();
+      return;
     }
-    else if(Cookies.get('role') === EUserRole.USER)
-      {
-        setlogintxt("Dashboard");
-        setloginstat("/Dashboard");
-      } 
-    else {
+
+    setEmail(email);
+    if(email && role && role === EUserRole.USER){
+      setlogintxt("Dashboard");
+      setloginstat("/Dashboard");
+      return;
+    }
+    if(email && role && role !== EUserRole.USER){
       setlogintxt("Dashboard");
       setloginstat("/Admin");
+      return;
     }
-  }, [email]);
+  }, []);
+
+  const deleteCookies = () => {
+    Cookies.remove('name');
+    Cookies.remove('username');
+    Cookies.remove('email');
+    Cookies.remove('phone');
+    Cookies.remove('companyId');
+    Cookies.remove('agentId');
+    Cookies.remove('role');
+    Cookies.remove('authToken');
+    router.push('/Login');
+  };
 
   return (
     <header className="dark:bg-black flex h-20 w-full shrink-0 items-center px-4 md:px-6">

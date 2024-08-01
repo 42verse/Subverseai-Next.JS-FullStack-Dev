@@ -56,7 +56,7 @@ import { ECallStatuses } from "../interfaces/user-calls.interface";
 
 export default function Component() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("dashboard");
   /* const [audioUrl, setAudioUrl] = useState("");
   const [usecase, setUsecase] = useState(""); */
   const [isLoading, setIsLoading] = useState(false);

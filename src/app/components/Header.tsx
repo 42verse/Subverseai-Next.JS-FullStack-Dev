@@ -3,9 +3,11 @@ import React, { useState, useEffect } from 'react';
 import Link from "next/link";
 import Cookies from 'js-cookie';
 import { Button } from "@/components/ui/button";
+import { useRouter } from 'next/navigation';
 
 export default function Header() {
   const [email, setEmail] = useState("");
+  const router = useRouter()
 
   useEffect(() => {
     setEmail(Cookies.get('email') || "");
@@ -16,7 +18,11 @@ export default function Header() {
     Cookies.remove('username');
     Cookies.remove('email');
     Cookies.remove('phone');
-    window.location.href = "/Login";
+    Cookies.remove('companyId');
+    Cookies.remove('agentId');
+    Cookies.remove('role');
+    Cookies.remove('authToken');
+    router.push('/Login');
   };
 
   return (
