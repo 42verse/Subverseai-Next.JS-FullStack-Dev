@@ -40,11 +40,11 @@ export async function POST(req: NextRequest, res: NextResponse) {
         city: response.data.data[i]?.City || '',
         state: response.data.data[i]?.State || '',
         policyId: response.data.data[i]?.Policy_ID || '',
-        policyLink: policyLink ? `${policyLink}${response.data.data[i]?.Policy_ID}` : ''
+        policyLink: policyLink && response.data.data[i]?.Policy_ID ? `${policyLink}${response.data.data[i]?.Policy_ID}` : ''
       }
 
-      if(Object.values(customerInfo).some(value => value === '') || !customerNumber){
-        console.log('Missing some properties >>> ')
+      if(!customerNumber){
+        console.log('Customer number is missing >>> ')
         console.log(customerInfo)
         continue;
       }

@@ -28,19 +28,34 @@ export async function POST(req: NextRequest, res: NextResponse) {
                         callStatus: '$Call_Status',
                         callTime: '$Call_Time',
                         callRecordingURL: '$Call_Recording_URL',
+                        callDuration: '$Call_Duration',
                         analysis: '$Analysis'
                     }}
                 }
             }
         ])
 
-        const customersData:any = await CustomerInformation.find(findCondition).select('customerName customerNumber state city email policyId policyLink');
-        const customerWithUserCalls = [];
-        for (let index = 0; index < customersData.length; index++) {
-           const findUserCallsByCustomerNumber = userCallsByCustomerNumber.find(data => data._id === customersData[index].customerNumber);
-           const userCalls = findUserCallsByCustomerNumber ? findUserCallsByCustomerNumber.userCalls : [];
-           customerWithUserCalls.push({ ...customersData[index].toObject(), userCalls })
+        const customersData:any = await CustomerInformation.find(findCondition).select('-_id customerName customerNumber state city email policyId policyLink');
+        const excludeCustomerNumbers:Array<string> = [];
+        //TODO: Give proper type
+        const customerWithUserCalls:any[] = [];
+        for (let index = 0; index < userCallsByCustomerNumber.length; index++) {
+           const findCustomerDetails = customersData.find((data:any) => data.customerNumber === userCallsByCustomerNumber[index]._id);
+           const userCalls = userCallsByCustomerNumber[index].userCalls;
+
+           if(findCustomerDetails){
+            excludeCustomerNumbers.push(findCustomerDetails.customerNumber);
+           }
+
+           const customerDetails = findCustomerDetails ? findCustomerDetails.toObject() : {customerNumber: userCallsByCustomerNumber[index]._id};
+
+           customerWithUserCalls.push({ ...customerDetails, userCalls })
         }
+        
+        const filterCustomersNotInUserCalls = customersData.filter((customer:any) => !excludeCustomerNumbers.includes(customer.customerNumber))
+        filterCustomersNotInUserCalls.forEach((customer:any) => {
+            customerWithUserCalls.push({...customer.toObject(), userCalls: []})
+        })
 
         return NextResponse.json(customerWithUserCalls)
     } catch (e) {

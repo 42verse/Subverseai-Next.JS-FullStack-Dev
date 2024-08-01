@@ -26,9 +26,10 @@ export async function POST(req: NextRequest, res: NextResponse) {
             Summary: 1,
             Analysis: 1,
         })
-        const transcriptWithSpeakers = data[0].Transcript.length ? data[0].Transcript : [];
-        const jsonconvertedsummary = data[0].Summary ? data[0].Summary : data[0].Summary || [];
-        const jsonconvertedanalysis = typeof data[0].Analysis === 'string'  ? JSON.parse(data[0].Analysis) : data[0].Analysis || {};
+
+        const transcriptWithSpeakers = data[0]?.Transcript && data[0]?.Transcript.length ? data[0].Transcript : [];
+        const jsonconvertedsummary = data[0]?.Summary ? data[0].Summary : "";
+        const jsonconvertedanalysis = data[0]?.Analysis ? (typeof data[0].Analysis === 'string'  ? JSON.parse(data[0].Analysis) : data[0].Analysis || {}) : {};
 
         return NextResponse.json({ transcriptWithSpeakers, jsonconvertedsummary, jsonconvertedanalysis });
     }
