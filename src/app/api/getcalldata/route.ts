@@ -124,8 +124,10 @@ export async function POST(req: NextRequest, res: NextResponse) {
             }
         ])
         if(search){
-            findCondition.Customer_Number = {$in: [...customersData.map((customer) => customer.customerNumber), search]}
+            findCondition.Customer_Number = {$in: [...customersData.map((customer) => customer.customerNumber), new RegExp(search,'i')]}
         }
+
+        console.log(findCondition)
 
         const stats = await Usercall.aggregate([
             {
