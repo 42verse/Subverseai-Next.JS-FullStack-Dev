@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner"
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardDescription, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardDescription, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import axios from "axios";
 import { Toaster } from "@/components/ui/sonner"
 import Loading from "@/app/components/Loading"
@@ -11,6 +11,164 @@ import { useRouter } from 'next/navigation'
 import Cookies from 'js-cookie'
 import { EUserRole } from '../interfaces/user.interface';
 import { ECallStatuses } from "../interfaces/user-calls.interface";
+import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, YAxis } from "recharts";
+import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+
+const chartConfig = {
+  customersReached: {
+    label: "Customers Reached",
+    color: "hsl(var(--chart-1))",
+  },
+  customerDiscussions: {
+    label: "Customer Discussions",
+    color: "hsl(var(--chart-2))",
+  },
+  activeLeads: {
+    label: "Active Leads",
+    color: "hsl(var(--chart-3))",
+  },
+  paymentDone: {
+    label: "Payment Done",
+    color: "hsl(var(--chart-4))",
+  },
+} satisfies ChartConfig
+ 
+const chartConfig1 = {
+  callsHandled: {
+    label: "Calls Handled",
+    color: "hsl(var(--chart-1))",
+  },
+  avgCallDurationInMins: {
+    label: "Avg Call Duration (In Minutes)",
+    color: "hsl(var(--chart-2))",
+  }
+} satisfies ChartConfig
+
+const chartData3 = [
+  { callStatus: "Call Answered", userCalls: 275, fill: "hsl(var(--chart-1))" },
+  { callStatus: "Couldn't Connect", userCalls: 200, fill: "hsl(var(--chart-2))" },
+  { callStatus: "Didn't pick up", userCalls: 187, fill: "hsl(var(--chart-3))" },
+  { callStatus: "Call Rejected", userCalls: 173, fill: "hsl(var(--chart-4))" },
+  { callStatus: "Call Pending", userCalls: 90, fill: "hsl(var(--chart-5))" },
+]
+
+const chartConfig3 = {
+  userCalls: {
+    label: "Calls",
+  },
+  callAnswered: {
+    label: "call answered",
+  },
+  couldNotConnect: {
+    label: "couldn't connect",
+  },
+  didNotPickup: {
+    label: "didn't pick up",
+  },
+  callRejected: {
+    label: "call rejected",
+  },
+  callPending: {
+    label: "call pending",
+  },
+} satisfies ChartConfig
+
+const chartData4 = [
+  { callDisposition: "customer hangup", userCalls: 275, fill: "var(--color-customerHangup)" },
+  { callDisposition: "not interested", userCalls: 200, fill: "var(--color-notInterested)" },
+  { callDisposition: "call back requested", userCalls: 187, fill: "var(--color-callBackRequested)" },
+  { callDisposition: "lead generated", userCalls: 173, fill: "var(--color-leadGenerated)" },
+  { callDisposition: "wrong number", userCalls: 90, fill: "var(--color-wrongLead)" },
+  { callDisposition: "fake lead", userCalls: 90, fill: "var(--color-fakeLead)" },
+  { callDisposition: "bought other policy", userCalls: 90, fill: "var(--color-boughtOtherPolicy)" },
+]
+
+const chartConfig4 = {
+  userCalls: {
+    label: "Calls",
+  },
+  customerHangup: {
+    label: "call answered",
+    color: "hsl(var(--chart-1))",
+  },
+  notInterested: {
+    label: "couldn't connect",
+    color: "hsl(var(--chart-2))",
+  },
+  callBackRequested: {
+    label: "didn't pick up",
+    color: "hsl(var(--chart-3))",
+  },
+  leadGenerated: {
+    label: "call rejected",
+    color: "hsl(var(--chart-4))",
+  },
+  wrongLead: {
+    label: "wrong lead",
+    color: "hsl(var(--chart-5))",
+  },
+  fakeLead: {
+    label: "fake lead",
+    color: "hsl(var(--chart-3))",
+  },
+  boughtOtherPolicy: {
+    label: "bought other policy",
+    color: "hsl(var(--chart-4))",
+  },
+} satisfies ChartConfig
+
+const chartData5 = [
+  { presentationGiven: "Yes", userCalls: 275, fill: "var(--color-yes)" },
+  { presentationGiven: "No", userCalls: 200, fill: "var(--color-no)" },
+]
+
+const chartConfig5 = {
+  userCalls: {
+    label: "Calls",
+  },
+  yes: {
+    label: "Yes",
+    color: "hsl(var(--chart-1))",
+  },
+  no: {
+    label: "No",
+    color: "hsl(var(--chart-2))",
+  }
+} satisfies ChartConfig
+
+const chartData6 = [
+  { leadStatus: "Not interested", userCalls: 275, fill: "var(--color-notInterested)" },
+  { leadStatus: "Asked to call back", userCalls: 200, fill: "var(--color-askedToCall)" },
+  { leadStatus: "Interest shown", userCalls: 200, fill: "var(--color-interestShown)" },
+  { leadStatus: "Documents shared", userCalls: 200, fill: "var(--color-documentShared)" },
+  { leadStatus: "Payment done", userCalls: 200, fill: "var(--color-paymentDone)" },
+]
+
+const chartConfig6 = {
+  userCalls: {
+    label: "Calls",
+  },
+  notInterested: {
+    label: "Not interested",
+    color: "hsl(var(--chart-1))",
+  },
+  askedToCall: {
+    label: "Asked to call back",
+    color: "hsl(var(--chart-2))",
+  },
+  interestShown: {
+    label: "Interest shown",
+    color: "hsl(var(--chart-3))",
+  },
+  documentShared: {
+    label: "Documents shared",
+    color: "hsl(var(--chart-4))",
+  },
+  paymentDone: {
+    label: "Payment done",
+    color: "hsl(var(--chart-5))",
+  }
+} satisfies ChartConfig
 
 /* interface TranscriptItem {
   transcript: string;
@@ -65,6 +223,12 @@ export default function Component() {
   const [apisummary, setApisummary] = useState<string[]>([]);
   const [apitranscript, setApitranscript] = useState<TranscriptItem[]>([]); */
   const [isCompany, setIsCompany] = useState(false);
+  const [agentPerformanceChartData, setAgentPerformanceChartData] = useState([]);
+  const [isGetAgentPerformanceRequestLoading, setIsGetAgentPerformanceRequestLoading] = useState(false);
+  const [dailyMetricsChartData, setDailyMetricsChartData] = useState([]);
+  const [isGetDailyMetricsRequestLoading, setIsGetDailyMetricsRequestLoading] = useState(false);
+  const [leadFunnelChartsData, setLeadFunnelChartsData] = useState([]);
+  const [isGetLeadFunnelChartsRequestLoading, setIsLeadFunnelChartsLoading] = useState(false);
 
   if(Cookies.get('role') === EUserRole.USER)
     {
@@ -75,6 +239,11 @@ export default function Component() {
     if(Cookies.get('role') && Cookies.get('role') !== EUserRole.USER){
       const isRoleCompany = Cookies.get('role') === EUserRole.COMPANY;
       setIsCompany(isRoleCompany);
+      if(isRoleCompany){
+        getAgentPerformanceChartStats();
+        getDailyMetricsChartStats();
+        getLeadFunnelChartsData();
+      }
     }else{
       router.push('/Login');
     }
@@ -114,6 +283,39 @@ export default function Component() {
       toast.error(response.data.error);
     }
     setIsLoading(false);
+  };
+
+  const getAgentPerformanceChartStats = async () => {
+    setIsGetAgentPerformanceRequestLoading(true);
+    const response = await axios.post("/api/getAgentPerformanceOverviewStats",{
+      companyId: Cookies.get("companyId")
+    });
+    if(response.data?.chartData){
+      setAgentPerformanceChartData(response.data.chartData)
+    }
+    setIsGetAgentPerformanceRequestLoading(false);
+  };
+
+  const getDailyMetricsChartStats = async () => {
+    setIsGetDailyMetricsRequestLoading(true);
+    const response = await axios.post("/api/getDailyMetricsStats",{
+      companyId: Cookies.get("companyId")
+    });
+    if(response.data?.chartData){
+      setDailyMetricsChartData(response.data.chartData)
+    }
+    setIsGetDailyMetricsRequestLoading(false);
+  };
+
+  const getLeadFunnelChartsData = async () => {
+    setIsLeadFunnelChartsLoading(true);
+    const response = await axios.post("/api/getLeadFunnelStats",{
+      companyId: Cookies.get("companyId")
+    });
+    if(response.data?.chartsData){
+      setLeadFunnelChartsData(response.data.chartsData)
+    }
+    setIsLeadFunnelChartsLoading(false);
   };
 
 
@@ -321,23 +523,75 @@ export default function Component() {
           </Link>
           <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 lg:p-8 xl:p-10">
             {isCompany && activeTab === "dashboard" && (
-              <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-1 text-black">
+              <div className="grid gap-6 text-black">     
                 <Card className="flex flex-col">
                   <CardHeader>
-                    <CardDescription>Visitors</CardDescription>
-                    <CardTitle>3,456</CardTitle>
+                    <CardDescription></CardDescription>
+                    <CardTitle>Agent Performance Overview</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div>Graph</div>
+                    <div>
+                      <ChartContainer config={chartConfig} className="h-[30dvh] w-full">
+                        <BarChart accessibilityLayer={true} data={agentPerformanceChartData}>
+                          <CartesianGrid vertical={false} />
+                          <XAxis dataKey="_id" tickMargin={0} tickLine={false} axisLine={true}  />
+                          <YAxis  tickLine={false} axisLine={true} tickMargin={0} />
+                          <ChartTooltip content={<ChartTooltipContent />} wrapperStyle={{color: 'white'}}/>
+                          <ChartLegend content={<ChartLegendContent />} className="text-white" />
+                          <Bar dataKey="customersReached" fill="var(--color-customersReached)" radius={4} />
+                          <Bar dataKey="customerDiscussions" fill="var(--color-customerDiscussions)" radius={4} />
+                          <Bar dataKey="activeLeads" fill="var(--color-activeLeads)" radius={4} />
+                          <Bar dataKey="paymentDone" fill="var(--color-paymentDone)" radius={4} />
+                        </BarChart>
+                      </ChartContainer>
+                    </div>
                   </CardContent>
                 </Card>
                 <Card className="flex flex-col">
                   <CardHeader>
-                    <CardDescription>Page Views</CardDescription>
-                    <CardTitle>12,345</CardTitle>
+                    <CardDescription></CardDescription>
+                    <CardTitle>Daily Metrics</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div>Graph</div>
+                    <div>
+                      <ChartContainer config={chartConfig1} className="h-[30dvh] w-full">
+                        <BarChart accessibilityLayer data={dailyMetricsChartData}>
+                          <CartesianGrid vertical={false} />
+                          <XAxis dataKey="agentName" tickMargin={0} tickLine={false} axisLine={true}  />
+                          <ChartTooltip content={<ChartTooltipContent />} wrapperStyle={{color: 'white'}}/>
+                          <ChartLegend content={<ChartLegendContent />} className="text-white" />
+                          <Bar dataKey="callsHandled" fill="var(--color-callsHandled)" radius={4} />
+                          <Bar dataKey="avgCallDurationInMins" fill="var(--color-avgCallDurationInMins)" radius={4} />
+                        </BarChart>
+                      </ChartContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="flex flex-col">
+                  <CardHeader>
+                    <CardDescription></CardDescription>
+                    <CardTitle>Lead Funnel Details</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-2">
+                    <div className="flex gap-1 flex-wrap">
+                       {leadFunnelChartsData.map((chart:any,index) => <Card key={`pie-chart-${index}`} className="flex flex-1 justify-center">
+                          <CardContent className="p-1">
+                              <p className="text-center mt-2">{chart?.title || ''}</p>
+                              <ChartContainer
+                                config={{}}
+                                className="mx-auto aspect-square h-[35dvh]"
+                              >
+                                <PieChart>
+                                  <ChartTooltip
+                                    labelClassName="!capitalize"
+                                    content={<ChartTooltipContent hideLabel />}
+                                  />
+                                  <Pie data={chart?.chartData || []} dataKey={chart?.dataKey || ""} nameKey={chart?.nameKey || ""} />
+                                </PieChart>
+                              </ChartContainer>
+                          </CardContent>
+                       </Card>)}     
+                    </div>
                   </CardContent>
                 </Card>
               </div>
