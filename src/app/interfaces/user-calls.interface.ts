@@ -5,6 +5,7 @@ export enum ETimeFilter {
 }
 
 export enum ECallDispositions {
+  ALL = "all",
   CUSTOMER_HANGUP = "customer_hangup",
   NOT_INTERESTED = "not_interested",
   CALLBACK_REQUESTED = "call_back_requested",
@@ -23,6 +24,7 @@ export enum ELeadStatuses {
 }
 
 export enum ECallStatuses {
+  ALL = "all",
   CALL_ANSWERED = "call_answered",
   COULD_NOT_CONNECT = "couldn't_connect",
   DID_NOT_PICK_UP = "didn't_pick_up",

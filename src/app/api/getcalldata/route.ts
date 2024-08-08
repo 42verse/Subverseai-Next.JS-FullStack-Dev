@@ -51,10 +51,10 @@ export async function POST(req: NextRequest, res: NextResponse) {
             filterCondition.convertedCallTime = {$gte: fromDate, $lte: toDate}
         }
         
-        if(!followUps && isCallHistory && presentationGiven){
+        if(isCallHistory && presentationGiven){
             filterCondition.convertedPresentationGiven = presentationGiven;
         }
-        if(!followUps && isCallHistory && leadStatus){
+        if(isCallHistory && leadStatus){
             filterCondition.convertedLeadStatus = leadStatus.replace(/_/g," ");
         }
         if(!followUps && isCallHistory && callDisposition){
@@ -89,6 +89,45 @@ export async function POST(req: NextRequest, res: NextResponse) {
                 $sum: '$Call_Duration'
             }
         }
+
+        const search = body.search || "";
+        const findCustomerCondition:any = {...findCondition};
+        if(search){
+            const searchRegex = new RegExp(search,'i');
+            findCustomerCondition.$or = [
+                { customerName: searchRegex },
+                { convertedCustomerNumber: searchRegex },
+                { convertedPolicyId: searchRegex }
+            ];
+        }
+
+        const customersData = await CustomerInformation.aggregate([
+            {
+                $addFields: {
+                    convertedCustomerNumber: {$toString: '$customerNumber'},
+                    convertedPolicyId: {$toString: '$policyId'}
+                }
+            },
+            {
+                $match: findCustomerCondition,
+            },
+            {
+                $project: {
+                    customerName: 1, 
+                    customerNumber: 1,
+                    state: 1,
+                    city: 1,
+                    email: 1,
+                    policyId: 1,
+                    policyLink: 1,
+                }
+            }
+        ])
+        if(search){
+            findCondition.Customer_Number = {$in: [...customersData.map((customer) => customer.customerNumber), new RegExp(search,'i')]}
+        }
+
+        console.log(findCondition)
 
         const stats = await Usercall.aggregate([
             {
@@ -164,26 +203,29 @@ export async function POST(req: NextRequest, res: NextResponse) {
                         }
                     },
                 },
-            }
+            },
+            {
+                $sort: { 'userCalls.0.convertedCallTime': -1}
+            },
         ])
 
-        const customersData:any = await CustomerInformation.find(findCondition).select('-_id customerName customerNumber state city email policyId policyLink');
+       
         const customerWithUserCalls:any[] = [];
         for (let index = 0; index < userCallsByCustomerNumber.length; index++) {
            const findCustomerDetails = customersData.find((data:any) => data.customerNumber === userCallsByCustomerNumber[index]._id);
            const userCalls = userCallsByCustomerNumber[index].userCalls;
-           const customerDetails = findCustomerDetails ? findCustomerDetails.toObject() : {customerNumber: userCallsByCustomerNumber[index]._id};
+           const customerDetails = findCustomerDetails ? findCustomerDetails : {customerNumber: userCallsByCustomerNumber[index]._id};
 
            customerWithUserCalls.push({ ...customerDetails, userCalls })
         }
-        const excludeCustomerNumbers = await (await Usercall.find(findCondition).distinct('Customer_Number'));
+        const excludeCustomerNumbers = (await Usercall.find(findCondition).distinct('Customer_Number'));
         const filterCustomersNotInUserCalls = customersData.filter((customer:any) => !excludeCustomerNumbers.includes(customer.customerNumber));
         userCallStatistics.pendingCalls = userCallStatistics?.pendingCalls || 0 + filterCustomersNotInUserCalls.length;
         
         const length = isCallHistory ? 0 : filterCustomersNotInUserCalls.length;
         for (let index = 0; index < length; index++) {
             const customer = filterCustomersNotInUserCalls[index];
-            customerWithUserCalls.push({...customer.toObject(), userCalls: []})
+            customerWithUserCalls.push({...customer, userCalls: []})
         }
 
         return NextResponse.json({callData: customerWithUserCalls, callStats: userCallStatistics})

@@ -21,7 +21,7 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import { ChevronsUpDown, EyeIcon, PhoneCallIcon } from "lucide-react";
+import { ChevronsUpDown, EyeIcon, FilterIcon, Loader2, Phone, PhoneCallIcon, SearchIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
     Select,
@@ -110,15 +110,17 @@ export default function Data() {
     const [agentList, setAgentList] = useState<Array<AgentDropdownList>>([]);
     const [selectedTimeFilter, setSelectedTimeFilter] = useState("all");
     const [selectedAgent, setSelectedAgent] = useState("all");
-    const [selectedCallDisposition, setSelectedCallDisposition] = useState("");
+    const [selectedCallDisposition, setSelectedCallDisposition] = useState("all");
     const [selectedLeadStatus, setSelectedLeadStatus] = useState("");
     const [selectedPresentationGiven, setSelectedPresentationGiven] = useState("");
-    const [selectedCallStatus, setSelectedCallStatus] = useState("");
+    const [selectedCallStatus, setSelectedCallStatus] = useState("all");
     const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
     const [callStats, setCallStats] = useState<any>(null);
     const [isCallHistory, setIsCallHistory] = useState(true);
     const searchParams = useSearchParams();
     const [isFollowUpFilter, setIsFollowUpFilter] = useState(false);
+    const [searchValue, setSearchValue] = useState("");
+    const [isExportRequestLoading, setIsExportRequestLoading] = useState(false);
 
     const getCompanyAgents = async () => {
         if(!Cookies.get("companyId")){
@@ -139,26 +141,16 @@ export default function Data() {
         if(isRoleCompany){
           getCompanyAgents();
         }
+
+        const callStatus = searchParams.get('callStatus');
+        if(callStatus === ECallStatuses.CALL_PENDING){
+            setIsCallHistory(false);
+            setSelectedCallStatus(ECallStatuses.CALL_PENDING);
+        }
       }else{
         router.push('/Login');
       }
     }, [])
-
-    useEffect(() => {
-       const callStatus = searchParams.get('callStatus');
-        if(callStatus === ECallStatuses.CALL_PENDING){
-            setIsCallHistory(false);
-            setSelectedCallStatus(ECallStatuses.CALL_PENDING);
-        }else{
-            setIsCallHistory(true);
-            setSelectedCallStatus("");
-        }
-
-        if(isCompany){
-           resetFilter();
-        }
-        setIsFollowUpFilter(false);
-    }, [searchParams])
       
     // Function to handle playing audio from a specific time
     const playFromSpecificTime = (time: number) => {
@@ -170,10 +162,10 @@ export default function Data() {
 
 
     useEffect(() => {
-      if(selectedTimeFilter || selectedAgent){
+      if((selectedCallDisposition || selectedCallStatus)){
         getuserdatafromapi();
       }
-    },[selectedTimeFilter,selectedAgent,isCallHistory])
+    },[selectedTimeFilter,selectedAgent,isCallHistory,selectedCallDisposition,selectedCallStatus,isFollowUpFilter])
 
 
     const getuserdatafromapi = async () => {
@@ -181,11 +173,19 @@ export default function Data() {
         const companyId = Cookies.get('companyId');
         const agentId = isCompany ? selectedAgent : Cookies.get('agentId');
         const timeFilter = selectedTimeFilter;
-        const callDisposition = selectedCallDisposition;
+        let callDisposition = '';
+        let followUps = null;
+        if(isFollowUpFilter){
+            followUps = followUpsFilter;
+        }
+        if(!isFollowUpFilter && selectedCallDisposition !== 'all'){
+            callDisposition = selectedCallDisposition;
+        }
         const leadStatus = selectedLeadStatus;
         const presentationGiven = selectedPresentationGiven;
-        const callStatus = selectedCallStatus;
+        const callStatus = selectedCallStatus === 'all' ? '' : selectedCallStatus;
         const role = Cookies.get('role');
+        const search = searchValue.trim();
 
         const response = await axios.post("/api/getcalldata",{
             companyId,
@@ -196,7 +196,9 @@ export default function Data() {
             leadStatus,
             callDisposition,
             role,
-            isCallHistory
+            isCallHistory,
+            search,
+            followUps
         });
         setIsLoading(false);
         if(response?.data){
@@ -237,10 +239,8 @@ export default function Data() {
     }
 
     const resetFilter = () => {
-        setSelectedCallDisposition("")
-        setSelectedLeadStatus("")
-        setSelectedPresentationGiven("")
-        setSelectedCallStatus("")
+        setSelectedLeadStatus("");
+        setSelectedPresentationGiven("");
     }
 
     const applyFilter = (e:  React.FormEvent) => {
@@ -252,11 +252,15 @@ export default function Data() {
     const followUpFilterHandler = async () => {
         setIsLoading(true);
         setIsFollowUpFilter(true);
-        resetFilter()
+        setIsCallHistory(true)
+        resetFilter();
+        setSelectedCallDisposition('all');
+        setSelectedCallStatus('all');
         const companyId = Cookies.get('companyId');
         const agentId = isCompany ? selectedAgent : Cookies.get('agentId');
         const timeFilter = selectedTimeFilter;
         const role = Cookies.get('role');
+        const search = searchValue.trim();
 
         const response = await axios.post("/api/getcalldata",{
             companyId,
@@ -264,7 +268,8 @@ export default function Data() {
             timeFilter,
             role,
             isCallHistory: true,
-            followUps: followUpsFilter
+            followUps: followUpsFilter,
+            search
         });
         setIsLoading(false);
         if(response.data){
@@ -272,6 +277,52 @@ export default function Data() {
             setCallStats(response.data.callStats)
         }
     }
+
+    const exportToExcelHandler = async () => {
+        setIsExportRequestLoading(true);
+        const companyId = Cookies.get('companyId');
+        const agentId = isCompany ? selectedAgent : Cookies.get('agentId');
+        const timeFilter = selectedTimeFilter;
+        let callDisposition:string[] = [];
+        if(selectedCallDisposition !== 'all' && !isFollowUpFilter){
+            callDisposition = [selectedCallDisposition]
+        }
+        if(isFollowUpFilter){
+            callDisposition = [...followUpsFilter]
+        }
+        const leadStatus = selectedLeadStatus;
+        const presentationGiven = selectedPresentationGiven;
+        const callStatus = selectedCallStatus === 'all' ? '' : selectedCallStatus;
+        const search = searchValue.trim();
+
+        const response = await axios.post("/api/exportToExcel",{
+            companyId,
+            agentId: agentId === "all" ? "": agentId,
+            timeFilter,
+            callStatus,
+            presentationGiven,
+            leadStatus,
+            callDisposition,
+            search
+        },{
+            responseType: "blob",
+        });
+        if(response.data){
+            const blob = new Blob([response.data]);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `user-calls.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+
+            toast.success('Exported successfully!')
+        }else{
+            toast.error('No data or Something went wrong!')
+        }
+        setIsExportRequestLoading(false);
+    };
 
     return (
         <>
@@ -281,49 +332,48 @@ export default function Data() {
                 <div></div>
             )}
             <Toaster position="bottom-right" />
-            <div className="p-2.5 md:flex justify-between px-5">
-                <div className="md:flex w-[50%]">
-                    <Link href="/Admin">
-                        <Button variant="outline">Back</Button>
-                    </Link>
-                    <div className="md:px-5">
-                        <div className="grid grid-cols-1 md:flex w-full">
-                            <Card className={`rounded-none hover:bg-muted cursor-pointer ${isCallHistory && !isFollowUpFilter ?'bg-muted': ''}`}  onClick={() => { setIsFollowUpFilter(false); router.replace(`/Data`); getuserdatafromapi()}}>
-                                <CardContent className="py-2">
-                                    <CardTitle className="text-sm text-muted-foreground">Calls Attempted</CardTitle>
-                                    <CardDescription className="text-lg text-center text-white">{callStats?.callsAttempted ? callStats.callsAttempted : 0}</CardDescription>
-                                </CardContent>
-                            </Card>
-                            {isCompany ? <Card className="rounded-none">
-                                <CardContent className="py-2">
-                                    <CardTitle className="text-sm text-muted-foreground">Total Call Duration</CardTitle>
-                                    <CardDescription className="text-lg text-center text-white">{callStats?.totalCallDuration ? (callStats.totalCallDuration/60).toFixed(1) : 0} mins</CardDescription>
-                                </CardContent>
-                            </Card> : null}
-                            <Card className={`rounded-none hover:bg-muted cursor-pointer ${!isCallHistory && !isFollowUpFilter ?'bg-muted': ''}`} onClick={() => { setIsFollowUpFilter(false); router.push(`/Data?callStatus=${ECallStatuses.CALL_PENDING}`)}}>
-                                <CardContent className="py-2">
-                                    <CardTitle className="text-sm text-muted-foreground">Pending Calls</CardTitle>
-                                    <CardDescription className="text-lg text-center text-white">{callStats?.pendingCalls ? callStats.pendingCalls : 0}</CardDescription>
-                                </CardContent>
-                            </Card>
-                            <Card className={`rounded-none hover:bg-muted cursor-pointer ${isFollowUpFilter?'bg-muted': ''}`} onClick={() => followUpFilterHandler()}>
-                                <CardContent className="py-2">
-                                    <CardTitle className="text-sm text-muted-foreground">Follow Ups</CardTitle>
-                                    <CardDescription className="text-lg text-center text-white">{callStats?.followUps ? callStats.followUps : 0}</CardDescription>
-                                </CardContent>
-                            </Card>
-                        </div>
+            <div className="px-5 grid md:flex gap-5 mt-3">
+                <Link href="/Admin">
+                    <Button variant="outline">Back</Button>
+                </Link>
+                <div className="flex justify-end md:order-3 md:flex-1">
+                    {isCallHistory ? <Button className=" bg-blue-400 hover:bg-blue-500" onClick={exportToExcelHandler} disabled={userdata.length === 0 || isExportRequestLoading}>{isExportRequestLoading ? <Loader2 className="animate-spin"/>: null}<span> Export</span></Button> :null}
+                    <Button className=" ml-3 bg-blue-400 hover:bg-blue-500" onClick={getuserdatafromapi}>Load Data</Button>
+                </div>
+                <div className="max-md:col-span-2">
+                    <div className="grid grid-cols-2 md:flex w-full">
+                        <Card className={`rounded-none hover:bg-muted cursor-pointer ${isCallHistory && !isFollowUpFilter ?'bg-muted': ''}`}  onClick={() => { setIsFollowUpFilter(false); setIsCallHistory(true); setSelectedCallStatus('all'); }}>
+                            <CardContent className="py-2">
+                                <CardTitle className="text-sm text-muted-foreground">Calls Attempted</CardTitle>
+                                <CardDescription className="text-lg text-center text-white">{callStats?.callsAttempted ? callStats.callsAttempted : 0}</CardDescription>
+                            </CardContent>
+                        </Card>
+                        {isCompany ? <Card className="rounded-none">
+                            <CardContent className="py-2">
+                                <CardTitle className="text-sm text-muted-foreground">Total Call Duration</CardTitle>
+                                <CardDescription className="text-lg text-center text-white">{callStats?.totalCallDuration ? (callStats.totalCallDuration/60).toFixed(1) : 0} mins</CardDescription>
+                            </CardContent>
+                        </Card> : null}
+                        <Card className={`rounded-none hover:bg-muted cursor-pointer ${!isCallHistory && !isFollowUpFilter ?'bg-muted': ''}`} onClick={() => { setIsFollowUpFilter(false); setIsCallHistory(false); setSelectedCallStatus(ECallStatuses.CALL_PENDING); }}>
+                            <CardContent className="py-2">
+                                <CardTitle className="text-sm text-muted-foreground">Pending Calls</CardTitle>
+                                <CardDescription className="text-lg text-center text-white">{callStats?.pendingCalls ? callStats.pendingCalls : 0}</CardDescription>
+                            </CardContent>
+                        </Card>
+                        <Card className={`rounded-none hover:bg-muted cursor-pointer ${isFollowUpFilter?'bg-muted': ''}`} onClick={() => { followUpFilterHandler();}}>
+                            <CardContent className="py-2">
+                                <CardTitle className="text-sm text-muted-foreground">Follow Ups</CardTitle>
+                                <CardDescription className="text-lg text-center text-white">{callStats?.followUps ? callStats.followUps : 0}</CardDescription>
+                            </CardContent>
+                        </Card>
                     </div>
                 </div>
-                
-
-                <Button className=" bg-blue-400 hover:bg-blue-500" onClick={getuserdatafromapi}>Load Data</Button>
             </div>
-            <div className="md:flex justify-between px-5 mt-2">
-                <div className="md:flex items-center gap-2 lg:gap-4">
-                    {isCallHistory ? <div>
+            <div className={`grid sm:grid-cols-2 ${isCompany ? "lg:grid-cols-6" : isCallHistory ? "lg:grid-cols-4": "lg:grid-cols-3"} gap-x-2 gap-y-6 px-5 mt-6`}>
+                    {isCallHistory ? <div className="flex flex-col gap-1">
+                        <Label className="px-1">Time</Label>
                         <Select onValueChange={(value) => setSelectedTimeFilter(value)} value={selectedTimeFilter}>
-                            <SelectTrigger className="w-full md:w-[180px] capitalize">
+                            <SelectTrigger className="w-full capitalize">
                                 <SelectValue placeholder="Select Time" />
                             </SelectTrigger>
                             <SelectContent>
@@ -335,10 +385,10 @@ export default function Data() {
                             </SelectContent>
                         </Select>  
                     </div> : null}
-
-                    {isCompany ? <div>
+                    {isCompany ? <div className="flex flex-col gap-1">
+                        <Label className="px-1">Agent</Label>
                          <Select onValueChange={(value) => setSelectedAgent(value)} value={selectedAgent}>
-                            <SelectTrigger className="w-full md:w-[180px] my-2 md:my-0">
+                            <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Select Agent" />
                             </SelectTrigger>
                             <SelectContent>
@@ -351,118 +401,114 @@ export default function Data() {
                             </SelectContent>
                         </Select>  
                     </div> : null}
-
-                    {isCompany && isCallHistory ? <div className="mr-2 lg:mr-0">
+                    {isCompany && isCallHistory
+                        ?  <div className="flex flex-col gap-1">
+                            <Label className="px-1">Call Disposition</Label>
+                            <Select onValueChange={(value) => setSelectedCallDisposition(value)} value={selectedCallDisposition} disabled={isFollowUpFilter}>
+                              <SelectTrigger className="w-full capitalize">
+                                  <SelectValue placeholder="Call Disposition" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  <SelectGroup>
+                                      {
+                                          Object.values(ECallDispositions).map((value,index) => {
+                                              return <SelectItem value={value} className="cursor-pointer capitalize" key={`call-disposition-option-${index}`}>{value.replace(/_/g," ")}</SelectItem>
+                                          })
+                                      }
+                                  </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                          </div>  
+                        : null}
+                    {isCompany && isCallHistory
+                      ?  <div className="flex flex-col gap-1">
+                          <Label className="px-1">Call Status</Label>
+                          <Select onValueChange={(value) => setSelectedCallStatus(value)} value={selectedCallStatus} disabled={isFollowUpFilter}>
+                            <SelectTrigger className="w-full capitalize">
+                                <SelectValue placeholder="Call Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    {
+                                        Object.values(ECallStatuses).map((value,index) => {
+                                            if(value !== ECallStatuses.CALL_PENDING){
+                                                return <SelectItem value={value} className="cursor-pointer capitalize" key={`call-status-option-${index}`}>{value.replace(/_/g," ")}</SelectItem>
+                                            }
+                                        })
+                                    }
+                                </SelectGroup>
+                            </SelectContent>
+                          </Select>  
+                        </div>   
+                      : null
+                    }
+                    {isCompany && isCallHistory ? <div className="flex items-end">
                         <Dialog open={isFilterDialogOpen} onOpenChange={(open) => setIsFilterDialogOpen(open)}>
                             <DialogTrigger asChild>
-                                <Button variant="outline" onClick={() => {setIsFilterDialogOpen(true)}}>Filter</Button>
+                                <Button variant="outline" onClick={() => {setIsFilterDialogOpen(true)}}><FilterIcon/></Button>
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-[425px]">
                                 <DialogHeader>
                                 <DialogTitle>Filter Data</DialogTitle>
                                 </DialogHeader>
-                                <div className="">
-                                    <div>
-                                        <Label htmlFor="name" className="text-right">
-                                        Call Disposition
-                                        </Label>
-                                        <Select onValueChange={(value) => setSelectedCallDisposition(value)} value={selectedCallDisposition}>
-                                            <SelectTrigger className="w-full mt-3 capitalize">
-                                                <SelectValue placeholder="Select Call Disposition" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectGroup>
-                                                    {
-                                                        Object.values(ECallDispositions).map((value,index) => {
-                                                            return <SelectItem value={value} className="cursor-pointer capitalize" key={`call-disposition-option-${index}`}>{value.replace(/_/g," ")}</SelectItem>
-                                                        })
-                                                    }
-                                                </SelectGroup>
-                                            </SelectContent>
-                                        </Select>  
-                                    </div>
-                                </div>
-                                <div className="">
-                                    <div>
-                                        <Label htmlFor="name" className="text-right">
-                                            Lead Status 
-                                        </Label>
-                                        <Select onValueChange={(value) => setSelectedLeadStatus(value)} value={selectedLeadStatus}>
-                                            <SelectTrigger className="w-full mt-3 capitalize">
-                                                <SelectValue placeholder="Select Lead Status" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectGroup>
-                                                    {
-                                                        Object.values(ELeadStatuses).map((value,index) => {
-                                                            return <SelectItem value={value} className="cursor-pointer capitalize" key={`lead-status-option-${index}`}>{value.replace(/_/g," ")}</SelectItem>
-                                                        })
-                                                    }
-                                                </SelectGroup>
-                                            </SelectContent>
-                                        </Select>  
-                                    </div>
-                                </div>
-
-                                <div className="">
-                                    <div>
-                                        <Label htmlFor="name" className="text-right">
-                                            Presentation given
-                                        </Label>
-                                        <Select onValueChange={(value) => setSelectedPresentationGiven(value)} value={selectedPresentationGiven}>
-                                            <SelectTrigger className="w-full mt-3 capitalize">
-                                                <SelectValue placeholder="Select Presentation given" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectGroup>
-                                                    {
-                                                        Object.values(EPresentationGiven).map((value,index) => {
-                                                            return <SelectItem value={value} className="cursor-pointer capitalize" key={`presentation-given-option-${index}`}>{value.replace(/_/g," ")}</SelectItem>
-                                                        })
-                                                    }
-                                                </SelectGroup>
-                                            </SelectContent>
-                                        </Select>  
-                                    </div>
-                                </div>
-
-                                <div className="">
-                                    <div>
-                                        <Label htmlFor="name" className="text-right">
-                                         Call Status
-                                        </Label>
-                                        <Select onValueChange={(value) => setSelectedCallStatus(value)} value={selectedCallStatus}>
-                                            <SelectTrigger className="w-full mt-3 capitalize">
-                                                <SelectValue placeholder="Select Call Status" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectGroup>
-                                                    {
-                                                        Object.values(ECallStatuses).map((value,index) => {
-                                                            if(value !== ECallStatuses.CALL_PENDING){
-                                                                return <SelectItem value={value} className="cursor-pointer capitalize" key={`call-status-option-${index}`}>{value.replace(/_/g," ")}</SelectItem>
-                                                            }
-                                                        })
-                                                    }
-                                                </SelectGroup>
-                                            </SelectContent>
-                                        </Select>  
-                                    </div>
-                                </div>
+                                  <div>
+                                      <Label htmlFor="name" className="text-right">
+                                          Lead Status 
+                                      </Label>
+                                      <Select onValueChange={(value) => setSelectedLeadStatus(value)} value={selectedLeadStatus}>
+                                          <SelectTrigger className="w-full mt-3 capitalize">
+                                              <SelectValue placeholder="Select Lead Status" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                              <SelectGroup>
+                                                  {
+                                                      Object.values(ELeadStatuses).map((value,index) => {
+                                                          return <SelectItem value={value} className="cursor-pointer capitalize" key={`lead-status-option-${index}`}>{value.replace(/_/g," ")}</SelectItem>
+                                                      })
+                                                  }
+                                              </SelectGroup>
+                                          </SelectContent>
+                                      </Select>  
+                                  </div>
+                                  <div>
+                                      <Label htmlFor="name" className="text-right">
+                                          Presentation given
+                                      </Label>
+                                      <Select onValueChange={(value) => setSelectedPresentationGiven(value)} value={selectedPresentationGiven}>
+                                          <SelectTrigger className="w-full mt-3 capitalize">
+                                              <SelectValue placeholder="Select Presentation given" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                              <SelectGroup>
+                                                  {
+                                                      Object.values(EPresentationGiven).map((value,index) => {
+                                                          return <SelectItem value={value} className="cursor-pointer capitalize" key={`presentation-given-option-${index}`}>{value.replace(/_/g," ")}</SelectItem>
+                                                      })
+                                                  }
+                                              </SelectGroup>
+                                          </SelectContent>
+                                      </Select>  
+                                  </div>
+                                  
                                 <DialogFooter>
                                 <Button type="submit" onClick={applyFilter}>Apply</Button>
                                 <Button onClick={resetFilter}>Reset</Button>
                                 </DialogFooter>
                             </DialogContent>
                         </Dialog>
-                    </div> : null}
-                </div>
-                {!isCompany? <div className="flex gap-2 py-2 justify-end">
-                    <form className="w-full flex" onSubmit={handleClickToCallAction}>    
-                        <Input placeholder="Enter Customer Number" className="rounded-r-none" value={contactNumber} onChange={(e) => setContactNumber(e.target.value)}/>
-                        <Button className="rounded-l-none" disabled={contactNumber.trim()===""}>Click to Call</Button>
+                    </div> : null}          
+                <div className="flex gap-2 items-end">
+                    <form className="w-full flex" onSubmit={(e)=> {e.preventDefault(); getuserdatafromapi()}}>    
+                        <Input placeholder="Enter Mobile,Name,Policy No" className="rounded-r-none" value={searchValue} onChange={(e) => setSearchValue(e.target.value)}/>
+                        <Button className="rounded-l-none" disabled={searchValue.trim()===""}><SearchIcon /></Button>
                     </form>
-                </div>:null}
+                </div>
+                {!isCompany? <div className="flex flex-1 w-full gap-2 items-end sm:justify-end sm:col-span-2">
+                <form className="flex max-sm:w-full" onSubmit={handleClickToCallAction}>    
+                    <Input placeholder="Enter Customer Number" className="rounded-r-none" value={contactNumber} onChange={(e) => setContactNumber(e.target.value)}/>
+                    <Button className="rounded-l-none" disabled={contactNumber.trim()===""}><PhoneCallIcon /></Button>
+                </form>
+            </div>:null}
             </div>
             <div  className="h-[60vh] overflow-auto m-3">
             <Table>
