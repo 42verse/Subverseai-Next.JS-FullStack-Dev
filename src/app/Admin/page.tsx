@@ -3,14 +3,17 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner"
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardDescription, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardDescription, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import axios from "axios";
 import { Toaster } from "@/components/ui/sonner"
 import Loading from "@/app/components/Loading"
 import { useRouter } from 'next/navigation'
 import Cookies from 'js-cookie'
-import { EUserRole } from '../interfaces/user.interface';
-import { ECallStatuses } from "../interfaces/user-calls.interface";
+import { AgentDropdownList, EUserRole } from '../interfaces/user.interface';
+import { ECallStatuses, ETimeFilter } from "../interfaces/user-calls.interface";
+import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, YAxis } from "recharts";
+import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 /* interface TranscriptItem {
   transcript: string;
@@ -65,16 +68,37 @@ export default function Component() {
   const [apisummary, setApisummary] = useState<string[]>([]);
   const [apitranscript, setApitranscript] = useState<TranscriptItem[]>([]); */
   const [isCompany, setIsCompany] = useState(false);
+  const [agentPerformanceChartData, setAgentPerformanceChartData] = useState<{stats: Array<any>,chartConfig: ChartConfig}>();
+  const [isGetAgentPerformanceRequestLoading, setIsGetAgentPerformanceRequestLoading] = useState(false);
+  const [dailyMetricsChartData, setDailyMetricsChartData] = useState<{stats: Array<any>,chartConfig: ChartConfig}>();
+  const [isGetDailyMetricsRequestLoading, setIsGetDailyMetricsRequestLoading] = useState(false);
+  const [leadFunnelChartsData, setLeadFunnelChartsData] = useState([]);
+  const [isGetLeadFunnelChartsRequestLoading, setIsLeadFunnelChartsLoading] = useState(false);
+  const [selectedTimeFilter, setSelectedTimeFilter] = useState("all");
+  const [agentList, setAgentList] = useState<Array<AgentDropdownList>>([]);
+  const [selectedAgent, setSelectedAgent] = useState("all");
 
-  if(Cookies.get('role') === EUserRole.USER)
-    {
-      router.push("/Login");
+  const getCompanyAgents = async () => {
+    if(!Cookies.get("companyId")){
+      router.push('/Login');
     }
+
+    const response = await axios.post("/api/getAgents", { companyId: Cookies.get("companyId")});
+    if(response.data?.agents){
+        setAgentList(response.data.agents)
+    }
+  }
 
   useEffect(() => {
     if(Cookies.get('role') && Cookies.get('role') !== EUserRole.USER){
       const isRoleCompany = Cookies.get('role') === EUserRole.COMPANY;
       setIsCompany(isRoleCompany);
+      if(isRoleCompany){
+        getAgentPerformanceChartStats();
+        getDailyMetricsChartStats();
+        getLeadFunnelChartsData();
+        getCompanyAgents();
+      }
     }else{
       router.push('/Login');
     }
@@ -116,6 +140,42 @@ export default function Component() {
     setIsLoading(false);
   };
 
+  const getAgentPerformanceChartStats = async (selectedTimeFilter = 'all') => {
+    setIsGetAgentPerformanceRequestLoading(true);
+    const timeFilter = selectedTimeFilter === 'all' ? '' : selectedTimeFilter;
+    const response = await axios.post("/api/getAgentPerformanceOverviewStats",{
+      companyId: Cookies.get("companyId"),
+      timeFilter
+    });
+    if(response.data?.chartData){
+      setAgentPerformanceChartData(response.data.chartData)
+    }
+    setIsGetAgentPerformanceRequestLoading(false);
+  };
+
+  const getDailyMetricsChartStats = async () => {
+    setIsGetDailyMetricsRequestLoading(true);
+    const response = await axios.post("/api/getDailyMetricsStats",{
+      companyId: Cookies.get("companyId")
+    });
+    if(response.data?.chartData){
+      setDailyMetricsChartData(response.data.chartData)
+    }
+    setIsGetDailyMetricsRequestLoading(false);
+  };
+
+  const getLeadFunnelChartsData = async (agentId:string = 'all') => {
+    setIsLeadFunnelChartsLoading(true);
+    const response = await axios.post("/api/getLeadFunnelStats",{
+      companyId: Cookies.get("companyId"),
+      agentId: agentId === 'all' ? '' : agentId
+    });
+    if(response.data?.chartsData){
+      setLeadFunnelChartsData(response.data.chartsData)
+    }
+    setIsLeadFunnelChartsLoading(false);
+  };
+
 
   const deleteCookies = () => {
     Cookies.remove('name');
@@ -140,7 +200,7 @@ export default function Component() {
       )}
 
     <Toaster />
-      <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
+      <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr] overflow-auto">
         <div className="hidden border-r bg-muted/40 lg:block">
           <div className="flex h-full max-h-screen flex-col gap-2">
             <div className="flex h-[60px] items-center border-b px-6">
@@ -321,23 +381,113 @@ export default function Component() {
           </Link>
           <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 lg:p-8 xl:p-10">
             {isCompany && activeTab === "dashboard" && (
-              <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-1 text-black">
+              <div className="grid gap-6 text-black">     
                 <Card className="flex flex-col">
                   <CardHeader>
-                    <CardDescription>Visitors</CardDescription>
-                    <CardTitle>3,456</CardTitle>
+                    <CardDescription></CardDescription>
+                    <div className="flex justify-between items-center">
+                      <CardTitle>Agent Performance Overview</CardTitle>    
+                        <Select disabled={isGetAgentPerformanceRequestLoading} onValueChange={(value) => {setSelectedTimeFilter(value); getAgentPerformanceChartStats(value); }} value={selectedTimeFilter}>
+                            <SelectTrigger className="w-40 capitalize">
+                                <SelectValue placeholder="Select Time" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    {Object.values(ETimeFilter).map((value,index) => {
+                                        return <SelectItem value={value} className="cursor-pointer capitalize" key={`time-filter-option-${index}`}>{value.replace(/_/g, " ")}</SelectItem>
+                                    })}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select> 
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <div>Graph</div>
+                    <div>
+                      {!isGetAgentPerformanceRequestLoading && agentPerformanceChartData ? <ChartContainer config={agentPerformanceChartData?.chartConfig || {}} className="h-[30dvh] w-full">
+                        <BarChart accessibilityLayer={true} data={agentPerformanceChartData?.stats || []}>
+                          <CartesianGrid vertical={false} />
+                          <XAxis dataKey="_id" tickMargin={0} tickLine={false} axisLine={true}  />
+                          <YAxis  tickLine={false} axisLine={true} tickMargin={0} />
+                          <ChartTooltip content={<ChartTooltipContent />} wrapperStyle={{color: 'white'}}/>
+                          <ChartLegend content={<ChartLegendContent />} className="text-white" />
+                          <Bar dataKey="customersReached" fill="var(--color-customersReached)" radius={4} />
+                          <Bar dataKey="customerDiscussions" fill="var(--color-customerDiscussions)" radius={4} />
+                          <Bar dataKey="activeLeads" fill="var(--color-activeLeads)" radius={4} />
+                          <Bar dataKey="paymentDone" fill="var(--color-paymentDone)" radius={4} />
+                        </BarChart>
+                      </ChartContainer> : null}
+                      {isGetAgentPerformanceRequestLoading ? <div className="w-full bg-muted h-[30dvh] animate-pulse rounded-md" />: null}
+                    </div>
                   </CardContent>
                 </Card>
                 <Card className="flex flex-col">
                   <CardHeader>
-                    <CardDescription>Page Views</CardDescription>
-                    <CardTitle>12,345</CardTitle>
+                    <CardDescription></CardDescription>
+                    <CardTitle>Daily Metrics</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div>Graph</div>
+                    <div>
+                      {!isGetDailyMetricsRequestLoading && dailyMetricsChartData ? <ChartContainer config={dailyMetricsChartData?.chartConfig || {}} className="h-[30dvh] w-full">
+                        <BarChart accessibilityLayer data={dailyMetricsChartData?.stats || []}>
+                          <CartesianGrid vertical={false} />
+                          <XAxis dataKey="agentName" tickMargin={0} tickLine={false} axisLine={true}  />
+                          <ChartTooltip content={<ChartTooltipContent />} wrapperStyle={{color: 'white'}}/>
+                          <ChartLegend content={<ChartLegendContent />} className="text-white" />
+                          <Bar dataKey="callsHandled" fill="var(--color-callsHandled)" radius={4} />
+                          <Bar dataKey="avgCallDurationInMins" fill="var(--color-avgCallDurationInMins)" radius={4} />
+                        </BarChart>
+                      </ChartContainer> : null}
+                      {isGetDailyMetricsRequestLoading ? <div className="w-full bg-muted h-[30dvh] animate-pulse rounded-md" />: null}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="flex flex-col">
+                  <CardHeader>
+                    <CardDescription></CardDescription>
+                    <div className="flex justify-between items-center">
+                      <CardTitle>Lead Funnel Details</CardTitle>
+                      <Select disabled={isGetLeadFunnelChartsRequestLoading} onValueChange={(value) => {setSelectedAgent(value); getLeadFunnelChartsData(value);}} value={selectedAgent}>
+                        <SelectTrigger className="w-40">
+                            <SelectValue placeholder="Select Agent" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectGroup>
+                                <SelectItem value="all" className="cursor-pointer">All</SelectItem>
+                                {agentList.map((agent,index) => {
+                                    return <SelectItem key={`agent-option-${index}`} value={agent._id} className="cursor-pointer">{agent.name}</SelectItem>
+                                })}
+                            </SelectGroup>
+                        </SelectContent>
+                      </Select> 
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-2">
+                    <div className="grid sm:grid-cols-2 gap-3">
+                       {!isGetLeadFunnelChartsRequestLoading && leadFunnelChartsData.length ? leadFunnelChartsData.map((chart:any,index) => <Card key={`pie-chart-${index}`} className="flex flex-1 justify-center">
+                          <CardContent className="p-1">
+                              <p className="text-center my-2">{chart?.title || ''}</p>
+                              {chart?.showNoData 
+                                ? <div className="aspect-square h-[40dvh] flex justify-center items-center bg-muted/50 rounded-md mb-2">
+                                  <p className="font-medium text-lg">No Data Found</p>
+                                </div>
+                                :<ChartContainer
+                                  config={chart?.chartConfig || {}}
+                                  className="mx-auto aspect-square w-[80dvw] md:w-[35dvw]"
+                                >
+                                  <PieChart>
+                                    <ChartTooltip
+                                      labelClassName="!capitalize"
+                                      content={<ChartTooltipContent hideLabel />}
+                                    />
+                                    <Pie data={chart?.chartData || []} dataKey={chart?.dataKey || ""} nameKey={chart?.nameKey || ""} />
+                                    <ChartLegend content={<ChartLegendContent nameKey={chart?.nameKey || ""} />} className="text-white flex flex-wrap capitalize" />
+                                  </PieChart>
+                                </ChartContainer>
+                              }
+                          </CardContent>
+                       </Card>): null}    
+                       {isGetLeadFunnelChartsRequestLoading ? <div className="w-full bg-muted h-[40dvh] animate-pulse rounded-md md:col-span-2 lg:col-span-4" />: null} 
+                    </div>
                   </CardContent>
                 </Card>
               </div>

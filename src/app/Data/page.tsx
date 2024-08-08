@@ -108,12 +108,12 @@ export default function Data() {
     const [isCompany, setIsCompany] = useState(false);
     const router = useRouter();
     const [agentList, setAgentList] = useState<Array<AgentDropdownList>>([]);
-    const [selectedTimeFilter, setSelectedTimeFilter] = useState("all");
-    const [selectedAgent, setSelectedAgent] = useState("all");
-    const [selectedCallDisposition, setSelectedCallDisposition] = useState("all");
+    const [selectedTimeFilter, setSelectedTimeFilter] = useState("");
+    const [selectedAgent, setSelectedAgent] = useState("");
+    const [selectedCallDisposition, setSelectedCallDisposition] = useState("");
     const [selectedLeadStatus, setSelectedLeadStatus] = useState("");
     const [selectedPresentationGiven, setSelectedPresentationGiven] = useState("");
-    const [selectedCallStatus, setSelectedCallStatus] = useState("all");
+    const [selectedCallStatus, setSelectedCallStatus] = useState("");
     const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
     const [callStats, setCallStats] = useState<any>(null);
     const [isCallHistory, setIsCallHistory] = useState(true);
