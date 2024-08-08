@@ -7,18 +7,20 @@ import { NextRequest, NextResponse } from "next/server";
 
 const getStats = (statsData: Array<any>, enumData: any, key: any,title: string) => {
     const allValues = Object.values(enumData).filter(value => value !== "all").map((value:any) => value.replace(/_/g, ' ').toLowerCase());
-    const stats:Array<{[key:string]: string,userCalls: string,fill: string}> = [];
+    const stats:Array<{[x: number]: string,userCalls: number,fill: string}> = [];
 
     for (let index = 0; index < allValues.length; index++) { 
-        const totalCount = statsData.find(data => data._id === allValues[index])?.totalCount || 0;
+        const totalCount = (statsData.find(data => data._id === allValues[index])?.totalCount as number) || 0;
         stats.push({
-            [key]: allValues[index],
-            userCalls: totalCount,
-            fill:  `hsl(var(--chart-${index+1 > 5 ? (index+1 - 5) : index+1}))`
+            [key as number]: (allValues[index] as string),
+            userCalls: (totalCount as number),
+            fill:  `hsl(var(--chart-${index+1}))`
         })
     }
 
-    return {chartData: stats,dataKey: 'userCalls', nameKey: key, title};
+    const showNoData = stats.every(data => data.userCalls === 0);
+
+    return {chartData: stats,dataKey: 'userCalls', nameKey: key, title, showNoData};
 }
 
 export async function POST(request: NextRequest, response: NextResponse) {

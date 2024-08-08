@@ -5,6 +5,25 @@ import { activeLeadStatusValues } from "@/utils/usercalls.utils";
 import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
+const chartConfig = {
+  customersReached: {
+    label: "Customers Reached",
+    color: "hsl(var(--chart-1))",
+  },
+  customerDiscussions: {
+    label: "Customer Discussions",
+    color: "hsl(var(--chart-2))",
+  },
+  activeLeads: {
+    label: "Active Leads",
+    color: "hsl(var(--chart-3))",
+  },
+  paymentDone: {
+    label: "Payment Done",
+    color: "hsl(var(--chart-4))",
+  },
+}
+
 export async function POST(request: NextRequest, response: NextResponse) {
     try {
         await dbConnect();
@@ -38,7 +57,7 @@ export async function POST(request: NextRequest, response: NextResponse) {
             filterCondition.convertedCallTime = {$gte: fromDate, $lte: toDate}
         }
 
-        const chartData = await UserInformation.aggregate([
+        const stats = await UserInformation.aggregate([
             {
                 $match: findCondition
             },
@@ -92,10 +111,15 @@ export async function POST(request: NextRequest, response: NextResponse) {
                         },
                     },
                 }
+            },
+            {
+                $sort: {
+                    _id: 1
+                } 
             }
         ]);
 
-        return NextResponse.json({chartData});
+        return NextResponse.json({chartData: {stats, chartConfig}});
     } catch (e) {
         return NextResponse.json({ error: "Error in fetching data from get agent performance overview stats API" });
     }
