@@ -19,7 +19,7 @@ const getStats = (statsData: Array<any>, enumData: any, key: any,title: string) 
         })
 
         chartConfig[allValues[index]] = {
-            label: allValues[index]
+            label: `${allValues[index]} (${totalCount})`
         }
     }
 
