@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 const getStats = (statsData: Array<any>, enumData: any, key: any,title: string) => {
     const allValues = Object.values(enumData).filter(value => value !== "all").map((value:any) => value.replace(/_/g, ' ').toLowerCase());
     const stats:Array<{[x: number]: string,userCalls: number,fill: string}> = [];
+    const chartConfig:any = {userCalls: {label: 'calls'}};
 
     for (let index = 0; index < allValues.length; index++) { 
         const totalCount = (statsData.find(data => data._id === allValues[index])?.totalCount as number) || 0;
@@ -16,11 +17,15 @@ const getStats = (statsData: Array<any>, enumData: any, key: any,title: string) 
             userCalls: (totalCount as number),
             fill:  `hsl(var(--chart-${index+1}))`
         })
+
+        chartConfig[allValues[index]] = {
+            label: allValues[index]
+        }
     }
 
     const showNoData = stats.every(data => data.userCalls === 0);
 
-    return {chartData: stats,dataKey: 'userCalls', nameKey: key, title, showNoData};
+    return {chartData: stats,dataKey: 'userCalls', nameKey: key, title, showNoData,chartConfig};
 }
 
 export async function POST(request: NextRequest, response: NextResponse) {

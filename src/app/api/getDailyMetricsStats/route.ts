@@ -55,6 +55,9 @@ export async function POST(request: NextRequest, response: NextResponse) {
                     totalCallDurationInSec: {
                         $sum:  '$userCalls.Call_Duration',
                     },
+                    totalNonZeroCallDuration: {
+                        $sum: { $cond: [{$and: [{$ifNull: ['$userCalls.Call_Duration',false]},{$ne: ['$userCalls.Call_Duration',0]}]},1,0]}
+                    }
                 }
             },
             {
@@ -64,8 +67,8 @@ export async function POST(request: NextRequest, response: NextResponse) {
                     callsHandled: 1,
                     avgCallDurationInMins: {
                         $cond: [
-                            {$ne: ['$callsHandled',0]},
-                            {$round: [{$divide: [{$divide: ['$totalCallDurationInSec',60]}, '$callsHandled']}, 2]},
+                            {$ne: ['$totalNonZeroCallDuration',0]},
+                            {$round: [{$divide: [{$divide: ['$totalCallDurationInSec',60]}, '$totalNonZeroCallDuration']}, 2]},
                             0
                         ]
                     }

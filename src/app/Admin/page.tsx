@@ -462,7 +462,7 @@ export default function Component() {
                     </div>
                   </CardHeader>
                   <CardContent className="p-2">
-                    <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-3">
+                    <div className="grid sm:grid-cols-2 gap-3">
                        {!isGetLeadFunnelChartsRequestLoading && leadFunnelChartsData.length ? leadFunnelChartsData.map((chart:any,index) => <Card key={`pie-chart-${index}`} className="flex flex-1 justify-center">
                           <CardContent className="p-1">
                               <p className="text-center my-2">{chart?.title || ''}</p>
@@ -471,8 +471,8 @@ export default function Component() {
                                   <p className="font-medium text-lg">No Data Found</p>
                                 </div>
                                 :<ChartContainer
-                                  config={{}}
-                                  className="mx-auto aspect-square w-[80dvw] md:w-[35dvw] xl:w-[18dvw]"
+                                  config={chart?.chartConfig || {}}
+                                  className="mx-auto aspect-square w-[80dvw] md:w-[35dvw]"
                                 >
                                   <PieChart>
                                     <ChartTooltip
@@ -480,6 +480,7 @@ export default function Component() {
                                       content={<ChartTooltipContent hideLabel />}
                                     />
                                     <Pie data={chart?.chartData || []} dataKey={chart?.dataKey || ""} nameKey={chart?.nameKey || ""} />
+                                    <ChartLegend content={<ChartLegendContent nameKey={chart?.nameKey || ""} />} className="text-white flex flex-wrap capitalize" />
                                   </PieChart>
                                 </ChartContainer>
                               }
